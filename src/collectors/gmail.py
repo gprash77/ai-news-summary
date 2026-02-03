@@ -193,19 +193,69 @@ class GmailCollector:
             except Exception:
                 pass
 
-        # Extract body
-        body = self._extract_body(msg['payload'])
+        # Extract body (get both HTML for link extraction and text for content)
+        body, web_url = self._extract_body_and_url(msg['payload'])
 
         return {
             'source_type': 'newsletter',
             'source': headers.get('From', 'Unknown'),
             'title': headers.get('Subject', 'No subject'),
-            'url': '',
+            'url': web_url,
             'content': body[:3000],
             'published': published.isoformat() if published else None,
             'author': headers.get('From', ''),
             'message_id': message_id,
         }
+
+    def _extract_body_and_url(self, payload: dict) -> tuple[str, str]:
+        """Extract email body and web view URL."""
+        body = ''
+        web_url = ''
+
+        # Try to get HTML first to extract links
+        html_content = self._get_html_content(payload)
+        if html_content:
+            from bs4 import BeautifulSoup
+            import re
+            soup = BeautifulSoup(html_content, 'lxml')
+
+            # Look for "View Online" or "View in browser" link
+            for link in soup.find_all('a', href=True):
+                link_text = link.get_text().lower()
+                if any(phrase in link_text for phrase in ['view online', 'view in browser', 'web version', 'read online']):
+                    web_url = link['href']
+                    break
+
+            # Also check for TLDR's tracking link pattern
+            if not web_url:
+                for link in soup.find_all('a', href=True):
+                    href = link['href']
+                    if 'tldr.tech' in href and '/ai/' in href:
+                        web_url = href
+                        break
+
+            body = soup.get_text(separator=' ', strip=True)
+        else:
+            body = self._extract_body(payload)
+
+        return body, web_url
+
+    def _get_html_content(self, payload: dict) -> str:
+        """Extract HTML content from email."""
+        if 'body' in payload and payload['body'].get('data'):
+            if payload.get('mimeType') == 'text/html':
+                return base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8')
+
+        if 'parts' in payload:
+            for part in payload['parts']:
+                mime_type = part.get('mimeType', '')
+                if mime_type == 'text/html' and part['body'].get('data'):
+                    return base64.urlsafe_b64decode(part['body']['data']).decode('utf-8')
+                elif 'parts' in part:
+                    html = self._get_html_content(part)
+                    if html:
+                        return html
+        return ''
 
     def _extract_body(self, payload: dict) -> str:
         """Extract email body, preferring plain text."""

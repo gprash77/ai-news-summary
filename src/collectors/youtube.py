@@ -150,9 +150,11 @@ class YouTubeCollector:
             return None
 
         try:
-            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            # New API uses instance.fetch() method
+            api = YouTubeTranscriptApi()
+            transcript_list = api.fetch(video_id)
             # Combine transcript segments
-            full_text = ' '.join(segment['text'] for segment in transcript_list)
+            full_text = ' '.join(segment.text for segment in transcript_list)
             return full_text
         except Exception as e:
             logger.debug(f"Could not fetch transcript for {video_id}: {e}")

@@ -122,20 +122,23 @@ TLDR:"""
                 for item in selected_items
             ])
 
-            prompt = f"""Summarize each of these AI news items in one bullet point each with the link. Keep it factual and specific - just state what each item is about, don't add your own analysis or insights. Include the URL as a clickable markdown link.
+            prompt = f"""Create exactly {len(selected_items)} bullet points summarizing these AI news items. Each bullet must:
+1. Be 1-2 sentences describing what the item is about
+2. Include the URL as a markdown link [Title](url)
+3. Be factual - no analysis or opinions
 
 News Items:
 {items_text}
 
-Summary (one bullet per item, factual only):"""
+Output exactly {len(selected_items)} bullets with links:"""
 
             if GEMINI_NEW_SDK:
                 response = client.models.generate_content(
                     model=self.model_name,
                     contents=prompt,
                     config=types.GenerateContentConfig(
-                        max_output_tokens=self.max_tokens,
-                        temperature=0.4
+                        max_output_tokens=2000,
+                        temperature=0.3
                     )
                 )
                 return response.text.strip()
@@ -143,8 +146,8 @@ Summary (one bullet per item, factual only):"""
                 response = client.generate_content(
                     prompt,
                     generation_config=genai.GenerationConfig(
-                        max_output_tokens=self.max_tokens,
-                        temperature=0.4
+                        max_output_tokens=2000,
+                        temperature=0.3
                     )
                 )
                 return response.text.strip()

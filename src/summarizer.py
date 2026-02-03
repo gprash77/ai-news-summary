@@ -1,12 +1,21 @@
 """Gemini Summarizer - Generates TLDR summaries using Gemini API."""
 
 import os
+import re
 import time
 import warnings
 from typing import Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _extract_retry_delay(error_msg: str) -> int:
+    """Extract retry delay from rate limit error message."""
+    match = re.search(r'retry in (\d+)', str(error_msg), re.IGNORECASE)
+    if match:
+        return int(match.group(1)) + 2  # Add 2 seconds buffer
+    return 60  # Default to 60 seconds if not found
 
 # Suppress deprecation warning for google.generativeai
 warnings.filterwarnings("ignore", message=".*google.generativeai.*deprecated.*")
@@ -58,15 +67,12 @@ class GeminiSummarizer:
 
         return self._client
 
-    def summarize_item(self, item: dict) -> str:
+    def summarize_item(self, item: dict, max_retries: int = 2) -> str:
         """Generate a TLDR summary for a single news item."""
         if not self.api_key:
             return self._fallback_summary(item)
 
-        try:
-            client = self._get_client()
-
-            prompt = f"""Summarize the following {item['source_type']} content in 1-2 sentences (TLDR style).
+        prompt = f"""Summarize the following {item['source_type']} content in 2-3 sentences (TLDR style).
 Focus on the key news/insight. Be concise and informative.
 
 Title: {item.get('title', 'No title')}
@@ -76,33 +82,62 @@ Content:
 
 TLDR:"""
 
-            if GEMINI_NEW_SDK:
-                response = client.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        max_output_tokens=250,
-                        temperature=0.3
-                    )
-                )
-                time.sleep(15)  # Rate limit: ~8 requests/minute to stay safe
-                return response.text.strip()
-            else:
-                response = client.generate_content(
-                    prompt,
-                    generation_config=genai.GenerationConfig(
-                        max_output_tokens=250,
-                        temperature=0.3
-                    )
-                )
-                time.sleep(15)
-                return response.text.strip()
+        for attempt in range(max_retries):
+            try:
+                client = self._get_client()
 
-        except Exception as e:
-            logger.error(f"Error summarizing item: {e}")
-            return self._fallback_summary(item)
+                if GEMINI_NEW_SDK:
+                    response = client.models.generate_content(
+                        model=self.model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            max_output_tokens=500,
+                            temperature=0.3
+                        )
+                    )
+                    result = response.text.strip()
+                else:
+                    response = client.generate_content(
+                        prompt,
+                        generation_config=genai.GenerationConfig(
+                            max_output_tokens=500,
+                            temperature=0.3
+                        )
+                    )
+                    result = response.text.strip()
 
-    def generate_daily_summary(self, items: list[dict]) -> str:
+                time.sleep(4)  # Rate limit: 15 RPM = 1 request every 4 seconds
+
+                # Check result is reasonable (at least 50 chars, ends with punctuation)
+                if len(result) >= 50 and result[-1] in '.!?':
+                    return result
+                elif len(result) >= 30:
+                    return result  # Accept shorter if it seems complete
+
+                logger.warning(f"Short summary result, attempt {attempt+1}")
+
+            except Exception as e:
+                error_str = str(e)
+                logger.error(f"Error summarizing item (attempt {attempt+1}): {e}")
+
+                # Check for quota exhaustion (daily limit)
+                if '429' in error_str and 'RESOURCE_EXHAUSTED' in error_str:
+                    if 'GenerateRequestsPerDayPerProjectPerModel' in error_str:
+                        logger.warning("Daily quota exhausted, using fallback for remaining items")
+                        break  # No point retrying, quota is gone for the day
+                    else:
+                        # Per-minute rate limit, wait and retry
+                        wait_time = _extract_retry_delay(error_str)
+                        logger.info(f"Rate limited, waiting {wait_time}s before retry")
+                        time.sleep(wait_time)
+                        continue
+
+                if attempt < max_retries - 1:
+                    time.sleep(3)
+
+        return self._fallback_summary(item)
+
+    def generate_daily_summary(self, items: list[dict], max_retries: int = 3) -> str:
         """Generate an overall summary of the day's news."""
         if not items:
             return "No AI news items collected today."
@@ -110,51 +145,64 @@ TLDR:"""
         if not self.api_key:
             return self._generate_bullet_summary(items)
 
-        try:
-            client = self._get_client()
+        # Select balanced items: 2 YouTube, 2 newsletter, 1 RSS
+        selected_items = self._select_balanced_items(items)
 
-            # Select balanced items: 2 YouTube, 2 newsletter, 1 RSS
-            selected_items = self._select_balanced_items(items)
+        # Prepare concise content for summary
+        items_text = "\n".join([
+            f"{i+1}. {item.get('title', 'No title')} | URL: {item.get('url', 'no link')}"
+            for i, item in enumerate(selected_items)
+        ])
 
-            # Prepare content for summary with links
-            items_text = "\n\n".join([
-                f"- [{item.get('source_type', 'item')}] {item.get('title', 'No title')} ({item.get('url', 'no link')}): {item.get('tldr', item.get('content', '')[:300])}"
-                for item in selected_items
-            ])
+        prompt = f"""Create exactly {len(selected_items)} bullet points for these AI news items.
 
-            prompt = f"""Create exactly {len(selected_items)} bullet points summarizing these AI news items. Each bullet must:
-1. Be 1-2 sentences describing what the item is about
-2. Include the URL as a markdown link [Title](url)
-3. Be factual - no analysis or opinions
+Format each bullet EXACTLY like this:
+• [Title](full_url_here)
 
-News Items:
+Items:
 {items_text}
 
-Output exactly {len(selected_items)} bullets with links:"""
+Output {len(selected_items)} bullets, each with a markdown link:"""
 
-            if GEMINI_NEW_SDK:
-                response = client.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        max_output_tokens=2000,
-                        temperature=0.3
-                    )
-                )
-                return response.text.strip()
-            else:
-                response = client.generate_content(
-                    prompt,
-                    generation_config=genai.GenerationConfig(
-                        max_output_tokens=2000,
-                        temperature=0.3
-                    )
-                )
-                return response.text.strip()
+        for attempt in range(max_retries):
+            try:
+                client = self._get_client()
 
-        except Exception as e:
-            logger.error(f"Error generating daily summary: {e}")
-            return self._generate_bullet_summary(items)
+                if GEMINI_NEW_SDK:
+                    response = client.models.generate_content(
+                        model=self.model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            max_output_tokens=1500,
+                            temperature=0.2
+                        )
+                    )
+                    result = response.text.strip()
+                else:
+                    response = client.generate_content(
+                        prompt,
+                        generation_config=genai.GenerationConfig(
+                            max_output_tokens=1500,
+                            temperature=0.2
+                        )
+                    )
+                    result = response.text.strip()
+
+                # Verify we got complete output (has all URLs)
+                if result.count('](http') >= len(selected_items) - 1:
+                    return result
+
+                logger.warning(f"Incomplete summary (attempt {attempt+1}), retrying...")
+                time.sleep(2)
+
+            except Exception as e:
+                logger.error(f"Error generating daily summary (attempt {attempt+1}): {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(5)
+
+        # Fallback to non-AI summary
+        logger.warning("Using fallback summary after retries failed")
+        return self._generate_bullet_summary(items)
 
     def _fallback_summary(self, item: dict) -> str:
         """Generate a simple summary when API is unavailable."""

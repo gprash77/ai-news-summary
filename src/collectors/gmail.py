@@ -2,12 +2,34 @@
 
 import os
 import base64
+import re
+from urllib.parse import unquote
 from datetime import datetime, timezone
 from typing import Optional
 from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _clean_tracking_url(url: str) -> str:
+    """Extract actual URL from tracking/redirect wrappers."""
+    if not url:
+        return url
+
+    # TLDR tracking URL pattern: https://tracking.tldrnewsletter.com/CL0/https%3A%2F%2F...
+    if 'tracking.tldrnewsletter.com' in url:
+        # Extract the encoded URL after /CL0/
+        match = re.search(r'/CL0/(https?[^/]+)', url)
+        if match:
+            decoded = unquote(match.group(1))
+            # The URL might be truncated, try to get a cleaner version
+            if 'web-version' in decoded:
+                # Just use a simple TLDR link
+                return decoded.split('?')[0] if '?' in decoded else decoded
+            return decoded
+
+    return url
 
 # Optional imports
 try:
@@ -237,6 +259,9 @@ class GmailCollector:
             body = soup.get_text(separator=' ', strip=True)
         else:
             body = self._extract_body(payload)
+
+        # Clean up tracking URLs
+        web_url = _clean_tracking_url(web_url)
 
         return body, web_url
 

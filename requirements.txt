@@ -1,0 +1,33 @@
+# AI News Summary Aggregator Dependencies
+
+# Core
+pyyaml>=6.0
+python-dateutil>=2.8
+python-dotenv>=1.0
+
+# RSS/Feed parsing
+feedparser>=6.0
+
+# YouTube
+google-api-python-client>=2.100
+youtube-transcript-api>=0.6
+
+# Gmail API
+google-auth>=2.23
+google-auth-oauthlib>=1.1
+google-auth-httplib2>=0.1
+
+# Gemini AI (new SDK preferred, old SDK as fallback)
+google-genai>=1.0
+google-generativeai>=0.3
+
+# HTTP requests
+requests>=2.31
+aiohttp>=3.9
+
+# HTML parsing (for RSS content)
+beautifulsoup4>=4.12
+lxml>=4.9
+
+# Utilities
+tenacity>=8.2  # Retry logic

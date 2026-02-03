@@ -1,0 +1,114 @@
+# AI News Summary Aggregator Configuration
+
+schedule:
+  time: "07:00"  # Daily execution time (used by launchd)
+
+sources:
+  twitter:
+    # Twitter/X accounts to follow (fetched via Nitter RSS)
+    accounts:
+      - geminicli       # Gemini CLI
+      - GeminiApp       # Google Gemini
+      - cursor_ai       # Cursor
+      - AnthropicAI     # Anthropic
+      - karpathy        # Andrej Karpathy
+      - OpenAINewsroom  # OpenAI Newsroom
+      - petergyang      # Peter Yang
+      - GoogleAIStudio  # Google AI Studio
+      - antigravity     # Google Antigravity
+      # - AINewsFeed    # AI News (uncomment if wanted)
+    # Nitter instances (will try in order, fallback if one is down)
+    # Note: Nitter instances frequently go down. Check https://status.d420.de/
+    # for working instances, or disable twitter collection if all fail.
+    nitter_instances:
+      - "nitter.privacydev.net"
+      - "nitter.poast.org"
+      - "nitter.net"
+      - "nitter.cz"
+      - "nitter.1d4.us"
+      - "nitter.kavin.rocks"
+    # Set to false to skip Twitter collection entirely
+    enabled: true
+
+  youtube:
+    # YouTube channels to monitor (supports @handles or channel IDs)
+    channels:
+      - "@peteryangyt"        # Peter Yang
+      - "@howiaipodcast"      # How I AI (Claire Vo)
+      - "@growproduct"        # Grow Product
+      - "@LennysPodcast"      # Lenny's Podcast (AI filter will skip non-AI episodes)
+      - "@matthew_berman"     # Matthew Berman
+      - "@aiexplained-official"  # AI Explained
+    # How many recent videos to fetch per channel (1 = latest only)
+    max_videos_per_channel: 1
+    # Fetch transcripts for better summaries (slower but better)
+    fetch_transcripts: true
+
+  rss:
+    enabled: true
+    # Limit items per feed to avoid one source dominating
+    max_items_per_feed: 2
+    feeds:
+      # AI-specific feeds only
+      - https://techcrunch.com/tag/artificial-intelligence/feed/
+      - https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+      - https://feeds.arstechnica.com/arstechnica/ai/index.xml
+
+  newsletters:
+    # Gmail label where newsletters are filtered
+    gmail_label: "AI-News"
+    # Mark as read after processing
+    mark_as_read: true
+    # Fetch latest 2 newsletters for summary
+    max_newsletters: 2
+    # Only from these senders (TLDR)
+    allowed_senders:
+      - "dan@tldrnewsletter.com"
+    # From name must contain this (to get only TLDR AI, not TLDR Founders etc.)
+    from_name_contains: "TLDR AI"
+
+gemini:
+  # API key loaded from environment variable
+  api_key_env: "GEMINI_API_KEY"
+  # Model to use (gemini-2.5-flash has higher free tier limits)
+  model: "gemini-2.5-flash"
+  # Max tokens for summaries
+  max_tokens: 1024
+
+email:
+  # Your Gmail address (sender)
+  from: "REDACTED_EMAIL"
+  # Email subject prefix
+  subject_prefix: "AI News Summary"
+  # Recipients (you + friends)
+  # First email is in "To", rest are in "BCC" for privacy
+  subscribers:
+    - "REDACTED_EMAIL"
+    # Add friends here:
+    # - "friend1@example.com"
+    # - "friend2@example.com"
+
+archive:
+  # Where to save daily summaries
+  path: "./archive"
+  # Format: markdown or json
+  format: "markdown"
+
+# Content filtering
+filters:
+  # Skip items older than N hours (168 = 7 days for weekly content)
+  max_age_hours: 168
+  # Minimum content length to include
+  min_content_length: 50
+  # Max items to process (to stay within API limits)
+  max_items: 10
+  # Keywords to prioritize (items with these get highlighted)
+  priority_keywords:
+    - "GPT"
+    - "Claude"
+    - "Gemini"
+    - "LLM"
+    - "OpenAI"
+    - "Anthropic"
+    - "Google AI"
+    - "DeepMind"

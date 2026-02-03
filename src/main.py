@@ -1,0 +1,284 @@
+#!/usr/bin/env python3
+"""AI News Summary Aggregator - Main entry point."""
+
+import argparse
+import logging
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent / '.env')
+
+import yaml
+
+from collectors import RSSCollector, TwitterCollector, YouTubeCollector, GmailCollector
+from summarizer import GeminiSummarizer
+from emailer import EmailSender
+from archiver import Archiver
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(Path(__file__).parent.parent / 'aggregator.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+def load_config(config_path: str = None) -> dict:
+    """Load configuration from YAML file."""
+    if config_path is None:
+        config_path = Path(__file__).parent.parent / 'config.yaml'
+
+    with open(config_path) as f:
+        return yaml.safe_load(f)
+
+
+def collect_all(config: dict) -> list[dict]:
+    """Collect items from all configured sources."""
+    all_items = []
+    max_age = config.get('filters', {}).get('max_age_hours', 48)
+
+    # RSS feeds
+    rss_config = config.get('sources', {}).get('rss', {})
+    if rss_config.get('feeds') and rss_config.get('enabled', True):
+        logger.info("Collecting from RSS feeds...")
+        rss_collector = RSSCollector(
+            feeds=rss_config['feeds'],
+            max_age_hours=max_age,
+            max_items_per_feed=rss_config.get('max_items_per_feed', 2)
+        )
+        items = rss_collector.collect()
+        all_items.extend(items)
+        logger.info(f"Collected {len(items)} items from RSS")
+    elif rss_config.get('feeds') and not rss_config.get('enabled', True):
+        logger.info("RSS collection disabled in config")
+
+    # Twitter/X via Nitter
+    twitter_config = config.get('sources', {}).get('twitter', {})
+    if twitter_config.get('accounts') and twitter_config.get('enabled', True):
+        logger.info("Collecting from Twitter/X...")
+        twitter_collector = TwitterCollector(
+            accounts=twitter_config['accounts'],
+            nitter_instances=twitter_config.get('nitter_instances', ['nitter.privacydev.net']),
+            max_age_hours=max_age
+        )
+        items = twitter_collector.collect()
+        all_items.extend(items)
+        logger.info(f"Collected {len(items)} items from Twitter")
+    elif twitter_config.get('accounts') and not twitter_config.get('enabled', True):
+        logger.info("Twitter collection disabled in config")
+
+    # YouTube
+    youtube_config = config.get('sources', {}).get('youtube', {})
+    if youtube_config.get('channels'):
+        logger.info("Collecting from YouTube...")
+        youtube_collector = YouTubeCollector(
+            channels=youtube_config['channels'],
+            max_videos_per_channel=youtube_config.get('max_videos_per_channel', 3),
+            fetch_transcripts=youtube_config.get('fetch_transcripts', True),
+            max_age_hours=max_age
+        )
+        items = youtube_collector.collect()
+        all_items.extend(items)
+        logger.info(f"Collected {len(items)} items from YouTube")
+
+    # Email newsletters
+    newsletter_config = config.get('sources', {}).get('newsletters', {})
+    if newsletter_config.get('gmail_label'):
+        logger.info("Collecting from Gmail newsletters...")
+        gmail_collector = GmailCollector(
+            label=newsletter_config['gmail_label'],
+            mark_as_read=newsletter_config.get('mark_as_read', True),
+            max_newsletters=newsletter_config.get('max_newsletters', 1),
+            allowed_senders=newsletter_config.get('allowed_senders'),
+            subject_must_contain=newsletter_config.get('subject_must_contain'),
+            from_name_contains=newsletter_config.get('from_name_contains')
+        )
+        items = gmail_collector.collect()
+        all_items.extend(items)
+        logger.info(f"Collected {len(items)} items from newsletters")
+
+    return all_items
+
+
+def summarize_items(items: list[dict], config: dict) -> tuple[list[dict], str]:
+    """Generate summaries for all items and overall digest."""
+    gemini_config = config.get('gemini', {})
+
+    summarizer = GeminiSummarizer(
+        model=gemini_config.get('model', 'gemini-2.5-flash-lite'),
+        max_tokens=gemini_config.get('max_tokens', 1024)
+    )
+
+    # Summarize each item
+    logger.info(f"Generating summaries for {len(items)} items...")
+    for item in items:
+        if item.get('content'):
+            item['tldr'] = summarizer.summarize_item(item)
+
+    # Generate overall summary
+    logger.info("Generating daily summary...")
+    daily_summary = summarizer.generate_daily_summary(items)
+
+    return items, daily_summary
+
+
+def run(
+    config_path: str = None,
+    skip_email: bool = False,
+    skip_archive: bool = False,
+    dry_run: bool = False
+):
+    """Main execution flow."""
+    logger.info("=" * 50)
+    logger.info(f"AI News Summary - {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    logger.info("=" * 50)
+
+    # Load config
+    config = load_config(config_path)
+
+    # Collect from all sources
+    items = collect_all(config)
+
+    if not items:
+        logger.warning("No items collected from any source")
+        return
+
+    logger.info(f"Total items collected: {len(items)}")
+
+    # Filter to AI-related content using fast keyword matching
+    # (All our sources are AI-focused, so this is just a safety check)
+    from summarizer import GeminiSummarizer
+    filter_summarizer = GeminiSummarizer()
+
+    original_count = len(items)
+    items = [item for item in items if filter_summarizer._keyword_ai_check(item)]
+    if original_count != len(items):
+        logger.info(f"After AI filter: {len(items)} items (filtered {original_count - len(items)} non-AI items)")
+
+    if not items:
+        logger.warning("No AI-related items after filtering")
+        return
+
+    # Limit items to stay within API rate limits
+    max_items = config.get('filters', {}).get('max_items', 10)
+    if len(items) > max_items:
+        logger.info(f"Limiting to {max_items} items (from {len(items)})")
+        items = items[:max_items]
+
+    if dry_run:
+        logger.info("[DRY RUN] Would process the following items:")
+        for item in items[:10]:
+            logger.info(f"  - [{item['source_type']}] {item.get('title', 'No title')[:60]}")
+        if len(items) > 10:
+            logger.info(f"  ... and {len(items) - 10} more")
+        return
+
+    # Generate summaries
+    items, daily_summary = summarize_items(items, config)
+
+    logger.info("\n--- Daily Summary ---")
+    logger.info(daily_summary)
+    logger.info("---")
+
+    # Archive
+    if not skip_archive:
+        archive_config = config.get('archive', {})
+        archiver = Archiver(
+            archive_path=archive_config.get('path', './archive'),
+            format=archive_config.get('format', 'markdown')
+        )
+        archive_path = archiver.save(items, daily_summary)
+        logger.info(f"Archived to: {archive_path}")
+
+    # Send email
+    if not skip_email:
+        email_config = config.get('email', {})
+        twitter_config = config.get('sources', {}).get('twitter', {})
+        if email_config.get('subscribers'):
+            emailer = EmailSender(
+                from_email=email_config['from'],
+                subscribers=email_config['subscribers'],
+                subject_prefix=email_config.get('subject_prefix', 'AI News Summary'),
+                twitter_accounts=twitter_config.get('accounts', [])
+            )
+            success = emailer.send_digest(items, daily_summary)
+            if success:
+                logger.info("Email sent successfully!")
+            else:
+                logger.error("Failed to send email")
+        else:
+            logger.warning("No subscribers configured - skipping email")
+
+    logger.info("Done!")
+
+
+def main():
+    """CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description='AI News Summary Aggregator',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python main.py                    # Full run: collect, summarize, archive, email
+  python main.py --dry-run          # Test collection without processing
+  python main.py --skip-email       # Run without sending email
+  python main.py --skip-archive     # Run without saving to archive
+  python main.py -c custom.yaml     # Use custom config file
+        """
+    )
+
+    parser.add_argument(
+        '-c', '--config',
+        help='Path to config file (default: config.yaml)',
+        default=None
+    )
+    parser.add_argument(
+        '--skip-email',
+        action='store_true',
+        help='Skip sending email'
+    )
+    parser.add_argument(
+        '--skip-archive',
+        action='store_true',
+        help='Skip saving to archive'
+    )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Collect items without processing (test mode)'
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='store_true',
+        help='Enable verbose logging'
+    )
+
+    args = parser.parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    try:
+        run(
+            config_path=args.config,
+            skip_email=args.skip_email,
+            skip_archive=args.skip_archive,
+            dry_run=args.dry_run
+        )
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

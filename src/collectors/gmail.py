@@ -8,12 +8,62 @@ from datetime import datetime, timezone
 from typing import Optional
 from pathlib import Path
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
 
 
+def _clean_tldr_content(content: str) -> str:
+    """Clean TLDR newsletter content to remove ads and keep only article summaries."""
+    if not content:
+        return content
+
+    # Remove invisible spacing characters
+    content = re.sub(r'[\u200c\u200b\u00a0]+', ' ', content)
+    content = re.sub(r'‌+', '', content)  # Zero-width non-joiner
+
+    # Remove navigation links
+    content = re.sub(r'Sign Up \| Advertise \| View Online', '', content)
+
+    # Remove the TLDR header with date
+    content = re.sub(r'T\s*L\s*D\s*R\s+(Together With TLDR AI|AI)\s*\d{4}-\d{2}-\d{2}', '', content)
+
+    # Remove sponsor sections - they end with a URL or "..."
+    content = re.sub(r'\(Sponsor\).*?(?=🚀|Headlines|$)', '', content, flags=re.DOTALL)
+
+    # Try to extract just the Headlines & Launches section
+    headlines_match = re.search(r'(🚀\s*Headlines?\s*[&and]*\s*Launches?.*)', content, re.DOTALL | re.IGNORECASE)
+    if headlines_match:
+        content = headlines_match.group(1)
+
+    # Clean up extra whitespace
+    content = re.sub(r'\s+', ' ', content).strip()
+
+    return content
+
+
+def _shorten_url(url: str, max_length: int = 80) -> str:
+    """Shorten URL if it exceeds max_length using TinyURL."""
+    if not url or len(url) <= max_length:
+        return url
+
+    try:
+        response = requests.get(
+            f"https://tinyurl.com/api-create.php?url={url}",
+            timeout=5
+        )
+        if response.status_code == 200:
+            shortened = response.text.strip()
+            logger.debug(f"Shortened URL: {len(url)} -> {len(shortened)} chars")
+            return shortened
+    except Exception as e:
+        logger.debug(f"URL shortening failed: {e}")
+
+    return url
+
+
 def _clean_tracking_url(url: str) -> str:
-    """Extract actual URL from tracking/redirect wrappers."""
+    """Extract actual URL from tracking/redirect wrappers and shorten if needed."""
     if not url:
         return url
 
@@ -23,9 +73,11 @@ def _clean_tracking_url(url: str) -> str:
         match = re.search(r'/CL0/([^/]+)', url)
         if match:
             decoded = unquote(match.group(1))
-            return decoded
+            # Shorten if still too long
+            return _shorten_url(decoded)
 
-    return url
+    # Shorten any other long URLs
+    return _shorten_url(url)
 
 # Optional imports
 try:
@@ -213,6 +265,10 @@ class GmailCollector:
 
         # Extract body (get both HTML for link extraction and text for content)
         body, web_url = self._extract_body_and_url(msg['payload'])
+
+        # Clean TLDR content to remove ads
+        if 'tldr' in headers.get('From', '').lower():
+            body = _clean_tldr_content(body)
 
         return {
             'source_type': 'newsletter',

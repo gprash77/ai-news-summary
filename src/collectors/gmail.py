@@ -17,16 +17,12 @@ def _clean_tracking_url(url: str) -> str:
     if not url:
         return url
 
-    # TLDR tracking URL pattern: https://tracking.tldrnewsletter.com/CL0/https%3A%2F%2F...
+    # TLDR tracking URL pattern: https://tracking.tldrnewsletter.com/CL0/https%3A%2F%2F.../1/tracking-id
     if 'tracking.tldrnewsletter.com' in url:
-        # Extract the encoded URL after /CL0/
-        match = re.search(r'/CL0/(https?[^/]+)', url)
+        # Extract the encoded URL between /CL0/ and the next /
+        match = re.search(r'/CL0/([^/]+)', url)
         if match:
             decoded = unquote(match.group(1))
-            # The URL might be truncated, try to get a cleaner version
-            if 'web-version' in decoded:
-                # Just use a simple TLDR link
-                return decoded.split('?')[0] if '?' in decoded else decoded
             return decoded
 
     return url

@@ -84,9 +84,7 @@ email:
   # First email is in "To", rest are in "BCC" for privacy
   subscribers:
     - "REDACTED_EMAIL"
-    # Add friends here:
-    # - "friend1@example.com"
-    # - "friend2@example.com"
+    - "REDACTED_EMAIL"
 
 archive:
   # Where to save daily summaries

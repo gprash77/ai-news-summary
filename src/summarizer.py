@@ -235,8 +235,8 @@ Output {len(selected_items)} bullets, each with a markdown link:"""
                 bullets.append(f"• {title}")
         return "\n".join(bullets)
 
-    def _select_balanced_items(self, items: list[dict], youtube_count: int = 2, newsletter_count: int = 2, rss_count: int = 1) -> list[dict]:
-        """Select items balanced across source types: 2 YouTube, 2 newsletter, 1 RSS."""
+    def _select_balanced_items(self, items: list[dict], youtube_count: int = 2, newsletter_count: int = 3, rss_count: int = 1) -> list[dict]:
+        """Select items balanced across source types: 2 YouTube, 3 newsletter, 1 RSS."""
         by_type = {}
         for item in items:
             source_type = item.get('source_type', 'other')

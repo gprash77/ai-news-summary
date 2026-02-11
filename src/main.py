@@ -116,11 +116,11 @@ def summarize_items(items: list[dict], config: dict) -> tuple[list[dict], str]:
         max_tokens=gemini_config.get('max_tokens', 1024)
     )
 
-    # Summarize each item
-    logger.info(f"Generating summaries for {len(items)} items...")
-    for item in items:
-        if item.get('content'):
-            item['tldr'] = summarizer.summarize_item(item)
+    # Summarize items that don't already have a tldr (e.g. TLDR articles are pre-summarized)
+    to_summarize = [item for item in items if not item.get('tldr') and item.get('content')]
+    logger.info(f"Generating summaries for {len(to_summarize)} items ({len(items) - len(to_summarize)} already have summaries)...")
+    for item in to_summarize:
+        item['tldr'] = summarizer.summarize_item(item)
 
     # Generate overall summary
     logger.info("Generating daily summary...")
@@ -166,11 +166,16 @@ def run(
         logger.warning("No AI-related items after filtering")
         return
 
-    # Limit items to stay within API rate limits
+    # Limit items that need Gemini summarization to stay within API rate limits.
+    # Items that already have a tldr (e.g. parsed TLDR newsletter articles) are free.
     max_items = config.get('filters', {}).get('max_items', 10)
-    if len(items) > max_items:
-        logger.info(f"Limiting to {max_items} items (from {len(items)})")
-        items = items[:max_items]
+    needs_summary = [item for item in items if not item.get('tldr')]
+    has_summary = [item for item in items if item.get('tldr')]
+    if len(needs_summary) > max_items:
+        logger.info(f"Limiting items needing summarization to {max_items} (from {len(needs_summary)})")
+        needs_summary = needs_summary[:max_items]
+    items = needs_summary + has_summary
+    logger.info(f"Items to process: {len(needs_summary)} need summarization, {len(has_summary)} already summarized")
 
     if dry_run:
         logger.info("[DRY RUN] Would process the following items:")

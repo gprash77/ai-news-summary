@@ -59,19 +59,22 @@ def collect_all(config: dict) -> list[dict]:
     elif rss_config.get('feeds') and not rss_config.get('enabled', True):
         logger.info("RSS collection disabled in config")
 
-    # Twitter/X via Nitter
+    # Twitter/X via Syndication API (tweet URLs) and/or Nitter RSS (accounts)
     twitter_config = config.get('sources', {}).get('twitter', {})
-    if twitter_config.get('accounts') and twitter_config.get('enabled', True):
+    has_tweets = twitter_config.get('tweet_urls')
+    has_accounts = twitter_config.get('accounts')
+    if (has_tweets or has_accounts) and twitter_config.get('enabled', True):
         logger.info("Collecting from Twitter/X...")
         twitter_collector = TwitterCollector(
-            accounts=twitter_config['accounts'],
-            nitter_instances=twitter_config.get('nitter_instances', ['nitter.privacydev.net']),
+            tweet_urls=twitter_config.get('tweet_urls', []),
+            accounts=twitter_config.get('accounts', []),
+            nitter_instances=twitter_config.get('nitter_instances', []),
             max_age_hours=max_age
         )
         items = twitter_collector.collect()
         all_items.extend(items)
         logger.info(f"Collected {len(items)} items from Twitter")
-    elif twitter_config.get('accounts') and not twitter_config.get('enabled', True):
+    elif (has_tweets or has_accounts) and not twitter_config.get('enabled', True):
         logger.info("Twitter collection disabled in config")
 
     # YouTube

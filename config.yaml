@@ -5,7 +5,16 @@ schedule:
 
 sources:
   twitter:
-    # Twitter/X accounts to follow (fetched via Nitter RSS)
+    # Tweet URLs or IDs to fetch via Syndication API (free, no auth needed).
+    # Supports full URLs (twitter.com or x.com) or bare numeric tweet IDs.
+    # Only public tweets work — private/deleted tweets return 404.
+    tweet_urls:
+      # Add tweet URLs here before each newsletter run, e.g.:
+      # - "https://x.com/AnthropicAI/status/1893370636521812434"
+      # - "https://x.com/OpenAI/status/1893000000000000000"
+      # - "1893370636521812434"  # bare ID also works
+      []
+    # Twitter/X accounts to follow (fetched via Nitter RSS — often unreliable)
     accounts:
       - geminicli       # Gemini CLI
       - GeminiApp       # Google Gemini
@@ -16,7 +25,6 @@ sources:
       - petergyang      # Peter Yang
       - GoogleAIStudio  # Google AI Studio
       - antigravity     # Google Antigravity
-      # - AINewsFeed    # AI News (uncomment if wanted)
     # Nitter instances (will try in order, fallback if one is down)
     # Note: Nitter instances frequently go down. Check https://status.d420.de/
     # for working instances, or disable twitter collection if all fail.

@@ -89,22 +89,27 @@ python src/main.py --skip-email
 python src/main.py
 ```
 
-### 6. Schedule Daily Execution
+### 6. Schedule Daily Execution (GitHub Actions)
 
-```bash
-# Copy plist to LaunchAgents
-cp com.user.ai-news-summary.plist ~/Library/LaunchAgents/
+The pipeline runs daily via `.github/workflows/daily-digest.yml` (cron: 15:00 UTC = 7 AM PST).
 
-# Edit the plist to add your API keys (or use env file)
-# Then load it:
-launchctl load ~/Library/LaunchAgents/com.user.ai-news-summary.plist
+**Required GitHub Secrets** (Settings → Secrets → Actions):
 
-# Check status
-launchctl list | grep ai-news
+| Secret | How to get it |
+|--------|--------------|
+| `GMAIL_TOKEN` | Contents of `credentials/gmail_token.json` after local OAuth |
+| `GMAIL_CREDENTIALS` | Contents of `credentials/gmail_credentials.json` from Google Cloud Console |
+| `GEMINI_API_KEY` | https://aistudio.google.com/app/apikey |
+| `YOUTUBE_API_KEY` | https://console.cloud.google.com |
 
-# To unload:
-launchctl unload ~/Library/LaunchAgents/com.user.ai-news-summary.plist
-```
+**Re-authorizing OAuth (when scopes change):**
+
+1. Delete local token: `rm credentials/gmail_token.json`
+2. Trigger OAuth locally: `python src/main.py --dry-run` (browser opens, sign in and approve)
+3. New token written to `credentials/gmail_token.json`
+4. Update the `GMAIL_TOKEN` GitHub secret with the new file contents
+
+**Manual trigger:** Go to Actions → Daily AI News Digest → Run workflow
 
 ## Usage
 

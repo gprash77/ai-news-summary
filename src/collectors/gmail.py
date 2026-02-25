@@ -110,6 +110,7 @@ except ImportError:
 SCOPES = [
     'https://www.googleapis.com/auth/gmail.modify',  # Read + mark as read
     'https://www.googleapis.com/auth/gmail.send',    # For sending emails
+    'https://www.googleapis.com/auth/drive.file',    # Upload podcast audio to Drive
 ]
 
 

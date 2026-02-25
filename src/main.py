@@ -13,10 +13,11 @@ load_dotenv(Path(__file__).parent.parent / '.env')
 
 import yaml
 
-from collectors import RSSCollector, TwitterCollector, YouTubeCollector, GmailCollector
+from collectors import RSSCollector, TwitterCollector, YouTubeCollector, GmailCollector, AnthropicCollector
 from summarizer import GeminiSummarizer
 from emailer import EmailSender
 from archiver import Archiver
+from audio_generator import AudioGenerator
 
 # Configure logging
 logging.basicConfig(
@@ -91,6 +92,18 @@ def collect_all(config: dict) -> list[dict]:
         all_items.extend(items)
         logger.info(f"Collected {len(items)} items from YouTube")
 
+    # Anthropic news (scraped)
+    anthropic_config = config.get('sources', {}).get('anthropic', {})
+    if anthropic_config.get('enabled', True):
+        logger.info("Collecting from Anthropic news...")
+        anthropic_collector = AnthropicCollector(
+            max_articles=anthropic_config.get('max_articles', 3),
+            max_age_hours=anthropic_config.get('max_age_hours', 72)
+        )
+        items = anthropic_collector.collect()
+        all_items.extend(items)
+        logger.info(f"Collected {len(items)} items from Anthropic")
+
     # Email newsletters
     newsletter_config = config.get('sources', {}).get('newsletters', {})
     if newsletter_config.get('gmail_label'):
@@ -123,7 +136,7 @@ def summarize_items(items: list[dict], config: dict) -> tuple[list[dict], str]:
     to_summarize = [item for item in items if not item.get('tldr') and item.get('content')]
     logger.info(f"Generating summaries for {len(to_summarize)} items ({len(items) - len(to_summarize)} already have summaries)...")
     for item in to_summarize:
-        item['tldr'] = summarizer.summarize_item(item)
+        item['tldr'], item['podcast_segment'] = summarizer.summarize_item(item)
 
     # Generate overall summary
     logger.info("Generating daily summary...")
@@ -195,6 +208,38 @@ def run(
     logger.info(daily_summary)
     logger.info("---")
 
+    # Generate podcast audio (optional)
+    audio_url = None
+    audio_config = config.get('audio', {})
+    if audio_config.get('enabled'):
+        logger.info("Generating podcast script...")
+        gemini_config = config.get('gemini', {})
+        script_summarizer = GeminiSummarizer(
+            model=gemini_config.get('model', 'gemini-2.5-flash-lite'),
+            max_tokens=gemini_config.get('max_tokens', 1024)
+        )
+        script = script_summarizer.generate_podcast_script(items)
+        if script:
+            logger.info("Generating audio...")
+            newsletter_config = config.get('sources', {}).get('newsletters', {})
+            creds = None
+            if newsletter_config.get('gmail_label'):
+                try:
+                    _cred_collector = GmailCollector(label=newsletter_config['gmail_label'])
+                    creds = _cred_collector._get_credentials()
+                except Exception as e:
+                    logger.warning(f"Could not load Google credentials for Drive: {e}")
+            audio_gen = AudioGenerator(
+                creds=creds,
+                audio_path=audio_config.get('path', './audio'),
+                voice=audio_config.get('voice', 'en-US-GuyNeural'),
+            )
+            audio_url = audio_gen.generate(script)
+            if audio_url:
+                logger.info(f"Podcast audio available at: {audio_url}")
+            else:
+                logger.warning("Audio generation failed or Drive upload skipped")
+
     # Archive
     if not skip_archive:
         archive_config = config.get('archive', {})
@@ -216,7 +261,7 @@ def run(
                 subject_prefix=email_config.get('subject_prefix', 'AI News Summary'),
                 twitter_accounts=twitter_config.get('accounts', [])
             )
-            success = emailer.send_digest(items, daily_summary)
+            success = emailer.send_digest(items, daily_summary, audio_url=audio_url)
             if success:
                 logger.info("Email sent successfully!")
             else:

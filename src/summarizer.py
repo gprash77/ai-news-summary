@@ -67,20 +67,28 @@ class GeminiSummarizer:
 
         return self._client
 
-    def summarize_item(self, item: dict, max_retries: int = 2) -> str:
-        """Generate a TLDR summary for a single news item."""
-        if not self.api_key:
-            return self._fallback_summary(item)
+    def summarize_item(self, item: dict, max_retries: int = 2) -> tuple[str, str]:
+        """Generate a TLDR summary and podcast segment for a single news item.
 
-        prompt = f"""Summarize the following {item['source_type']} content in 2-3 sentences (TLDR style).
-Focus on the key news/insight. Be concise and informative.
+        Returns:
+            (tldr, podcast_segment) — both are strings; podcast_segment may be
+            empty string if the API call fails.
+        """
+        if not self.api_key:
+            return self._fallback_summary(item), ""
+
+        prompt = f"""You must produce BOTH a TLDR and a PODCAST segment for this content. Do NOT stop after the TLDR.
 
 Title: {item.get('title', 'No title')}
 Source: {item.get('source', 'Unknown')}
 Content:
 {item.get('content', '')[:1500]}
 
-TLDR:"""
+Respond in EXACTLY this format (both sections are REQUIRED):
+
+TLDR: A 2-3 sentence concise summary.
+
+PODCAST: A 200-250 word conversational segment that a podcast host would read aloud. Write in flowing prose, no bullet points. Explain why this matters and what it means for the AI community."""
 
         for attempt in range(max_retries):
             try:
@@ -91,7 +99,7 @@ TLDR:"""
                         model=self.model_name,
                         contents=prompt,
                         config=types.GenerateContentConfig(
-                            max_output_tokens=500,
+                            max_output_tokens=700,
                             temperature=0.3
                         )
                     )
@@ -100,7 +108,7 @@ TLDR:"""
                     response = client.generate_content(
                         prompt,
                         generation_config=genai.GenerationConfig(
-                            max_output_tokens=500,
+                            max_output_tokens=700,
                             temperature=0.3
                         )
                     )
@@ -108,13 +116,14 @@ TLDR:"""
 
                 time.sleep(4)  # Rate limit: 15 RPM = 1 request every 4 seconds
 
-                # Check result is reasonable (at least 50 chars, ends with punctuation)
-                if len(result) >= 50 and result[-1] in '.!?':
-                    return result
-                elif len(result) >= 30:
-                    return result  # Accept shorter if it seems complete
+                logger.debug(f"Raw Gemini response:\n{result[:500]}")
+                tldr, podcast_segment = self._parse_dual_output(result)
+                logger.info(f"Parsed — TLDR: {len(tldr)} chars, Podcast: {len(podcast_segment)} chars")
 
-                logger.warning(f"Short summary result, attempt {attempt+1}")
+                if len(tldr) >= 30:
+                    return tldr, podcast_segment
+
+                logger.warning(f"Short TLDR result, attempt {attempt+1}")
 
             except Exception as e:
                 error_str = str(e)
@@ -135,7 +144,27 @@ TLDR:"""
                 if attempt < max_retries - 1:
                     time.sleep(3)
 
-        return self._fallback_summary(item)
+        return self._fallback_summary(item), ""
+
+    def _parse_dual_output(self, text: str) -> tuple[str, str]:
+        """Parse response with TLDR: and PODCAST: sections."""
+        tldr = ""
+        podcast_segment = ""
+
+        # Try multiple patterns the model might use
+        podcast_match = re.search(r'\n+\**\s*PODCAST\s*:?\**\s*', text, re.IGNORECASE)
+        if podcast_match:
+            tldr_part = text[:podcast_match.start()]
+            podcast_segment = text[podcast_match.end():].strip()
+        else:
+            logger.debug(f"No PODCAST section found in response: {text[:200]}...")
+            tldr_part = text
+
+        # Strip "TLDR:" prefix if present
+        tldr_clean = re.sub(r'^\**\s*TLDR\s*:?\**\s*', '', tldr_part, flags=re.IGNORECASE).strip()
+        tldr = tldr_clean if tldr_clean else tldr_part.strip()
+
+        return tldr, podcast_segment
 
     def generate_daily_summary(self, items: list[dict], max_retries: int = 3) -> str:
         """Generate an overall summary of the day's news."""
@@ -203,6 +232,87 @@ Output {len(selected_items)} bullets, each with a markdown link:"""
         # Fallback to non-AI summary
         logger.warning("Using fallback summary after retries failed")
         return self._generate_bullet_summary(items)
+
+    def generate_podcast_script(self, items: list[dict], max_retries: int = 2) -> str:
+        """Stitch per-item podcast segments into a full ~20-minute podcast script.
+
+        Only items that have a 'podcast_segment' key are included.
+        Returns the full script string, or empty string on failure.
+        """
+        segments = [item for item in items if item.get('podcast_segment')]
+        if not segments:
+            logger.info("No podcast segments found — skipping podcast script generation")
+            return ""
+
+        segments_text = ""
+        for i, item in enumerate(segments, 1):
+            title = item.get('title', 'Untitled')
+            source = item.get('source', 'Unknown')
+            segment = item['podcast_segment']
+            segments_text += f"\n--- Story {i}: {title} (Source: {source}) ---\n{segment}\n"
+
+        prompt = f"""You are producing a daily AI news podcast called "AI News Daily".
+Write a complete, natural-sounding podcast script using the story segments below.
+
+Requirements:
+- Open with: "Welcome to AI News Daily, your daily briefing on artificial intelligence."
+- Include a brief (1-2 sentence) transition between each story
+- Insert each story segment VERBATIM — do not rewrite or shorten them
+- Close with a friendly outro
+- The tone should be warm, informative, and conversational
+- Do NOT add bullet points, headers, or stage directions
+
+Story segments to include (use verbatim):
+{segments_text}
+
+Write the complete podcast script now:"""
+
+        for attempt in range(max_retries):
+            try:
+                client = self._get_client()
+
+                if GEMINI_NEW_SDK:
+                    response = client.models.generate_content(
+                        model=self.model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            max_output_tokens=2000,
+                            temperature=0.4
+                        )
+                    )
+                    result = response.text.strip()
+                else:
+                    response = client.generate_content(
+                        prompt,
+                        generation_config=genai.GenerationConfig(
+                            max_output_tokens=2000,
+                            temperature=0.4
+                        )
+                    )
+                    result = response.text.strip()
+
+                time.sleep(4)
+
+                if len(result) > 200:
+                    logger.info(f"Podcast script generated ({len(result)} chars, {len(segments)} stories)")
+                    return result
+
+                logger.warning(f"Short podcast script on attempt {attempt+1}")
+
+            except Exception as e:
+                error_str = str(e)
+                logger.error(f"Error generating podcast script (attempt {attempt+1}): {e}")
+                if '429' in error_str and 'RESOURCE_EXHAUSTED' in error_str:
+                    if 'GenerateRequestsPerDayPerProjectPerModel' in error_str:
+                        break
+                    wait_time = _extract_retry_delay(error_str)
+                    logger.info(f"Rate limited, waiting {wait_time}s before retry")
+                    time.sleep(wait_time)
+                    continue
+                if attempt < max_retries - 1:
+                    time.sleep(5)
+
+        return ""
 
     def _fallback_summary(self, item: dict) -> str:
         """Generate a simple summary when API is unavailable."""

@@ -86,7 +86,7 @@ class EmailSender:
             self._service = build('gmail', 'v1', credentials=creds)
         return self._service
 
-    def send_digest(self, items: list[dict], daily_summary: str) -> bool:
+    def send_digest(self, items: list[dict], daily_summary: str, audio_url: Optional[str] = None) -> bool:
         """Send the daily digest email to all subscribers."""
         if not self.subscribers:
             logger.warning("No subscribers configured")
@@ -102,8 +102,8 @@ class EmailSender:
 
         # Format the email content
         subject = f"{self.subject_prefix} - {datetime.now().strftime('%b %d, %Y')}"
-        html_body = self._format_email_html(items, daily_summary, include_twitter_fallback=not has_twitter)
-        text_body = self._format_email_text(items, daily_summary, include_twitter_fallback=not has_twitter)
+        html_body = self._format_email_html(items, daily_summary, include_twitter_fallback=not has_twitter, audio_url=audio_url)
+        text_body = self._format_email_text(items, daily_summary, include_twitter_fallback=not has_twitter, audio_url=audio_url)
 
         try:
             # Create message
@@ -134,7 +134,7 @@ class EmailSender:
             logger.error(f"Error sending email: {e}")
             return False
 
-    def _format_email_text(self, items: list[dict], daily_summary: str, include_twitter_fallback: bool = False) -> str:
+    def _format_email_text(self, items: list[dict], daily_summary: str, include_twitter_fallback: bool = False, audio_url: Optional[str] = None) -> str:
         """Format email as plain text."""
         date_str = datetime.now().strftime('%B %d, %Y')
 
@@ -143,6 +143,15 @@ class EmailSender:
             "            TODAY'S TOP AI NEWS",
             "=" * 55,
             "",
+        ]
+
+        if audio_url:
+            lines += [
+                f"🎧 LISTEN: {audio_url}",
+                "",
+            ]
+
+        lines += [
             "Quick Summary:",
             daily_summary,
             "",
@@ -190,7 +199,7 @@ class EmailSender:
 
         return "\n".join(lines)
 
-    def _format_email_html(self, items: list[dict], daily_summary: str, include_twitter_fallback: bool = False) -> str:
+    def _format_email_html(self, items: list[dict], daily_summary: str, include_twitter_fallback: bool = False, audio_url: Optional[str] = None) -> str:
         """Format email as HTML."""
         date_str = datetime.now().strftime('%B %d, %Y')
 
@@ -245,6 +254,17 @@ class EmailSender:
         # Convert daily summary to HTML (handle bullet points)
         summary_html = daily_summary.replace('\n', '<br>').replace('•', '&#8226;')
 
+        # Build optional audio button block
+        audio_html = ""
+        if audio_url:
+            audio_html = f"""
+            <div style="text-align: center; margin-bottom: 20px;">
+                <a href="{audio_url}" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); color: white; text-decoration: none; border-radius: 30px; font-size: 16px; font-weight: bold; letter-spacing: 0.5px;">
+                    🎧 Listen to Today's Podcast
+                </a>
+            </div>
+            """
+
         html = f"""
         <!DOCTYPE html>
         <html>
@@ -256,6 +276,8 @@ class EmailSender:
                 <h1 style="margin: 0; font-size: 24px;">🤖 AI News Summary</h1>
                 <p style="margin: 10px 0 0 0; opacity: 0.9;">{date_str}</p>
             </div>
+
+            {audio_html}
 
             <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
                 <h2 style="margin: 0 0 10px 0; font-size: 16px; color: #333;">📋 Quick Summary</h2>

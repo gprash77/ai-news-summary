@@ -62,6 +62,11 @@ sources:
       - https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
       - https://feeds.arstechnica.com/arstechnica/ai/index.xml
 
+  anthropic:
+    enabled: true
+    max_articles: 3
+    max_age_hours: 72
+
   newsletters:
     # Gmail label where newsletters are filtered
     gmail_label: "AI-News"
@@ -93,6 +98,11 @@ email:
   subscribers:
     - "REDACTED_EMAIL"
     - "REDACTED_EMAIL"
+
+audio:
+  enabled: true
+  path: "./audio"
+  voice: "en-US-GuyNeural"
 
 archive:
   # Where to save daily summaries

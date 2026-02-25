@@ -31,3 +31,6 @@ lxml>=4.9
 
 # Utilities
 tenacity>=8.2  # Retry logic
+
+# Text-to-speech (podcast audio generation)
+edge-tts>=6.1

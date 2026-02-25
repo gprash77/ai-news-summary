@@ -83,8 +83,8 @@ sources:
 gemini:
   # API key loaded from environment variable
   api_key_env: "GEMINI_API_KEY"
-  # Model to use (gemini-2.5-flash has higher free tier limits)
-  model: "gemini-2.5-flash"
+  # Model to use (flash-lite has higher free tier RPD limits)
+  model: "gemini-2.5-flash-lite"
   # Max tokens for summaries
   max_tokens: 1024
 

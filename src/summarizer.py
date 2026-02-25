@@ -116,9 +116,7 @@ PODCAST: A 200-250 word conversational segment that a podcast host would read al
 
                 time.sleep(4)  # Rate limit: 15 RPM = 1 request every 4 seconds
 
-                logger.debug(f"Raw Gemini response:\n{result[:500]}")
                 tldr, podcast_segment = self._parse_dual_output(result)
-                logger.info(f"Parsed — TLDR: {len(tldr)} chars, Podcast: {len(podcast_segment)} chars")
 
                 if len(tldr) >= 30:
                     return tldr, podcast_segment

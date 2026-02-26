@@ -173,7 +173,7 @@ PODCAST:"""
                         model=self.model_name,
                         contents=prompt,
                         config=types.GenerateContentConfig(
-                            max_output_tokens=500,
+                            max_output_tokens=1024,
                             temperature=0.3
                         )
                     )
@@ -182,7 +182,7 @@ PODCAST:"""
                     response = client.generate_content(
                         prompt,
                         generation_config=genai.GenerationConfig(
-                            max_output_tokens=500,
+                            max_output_tokens=1024,
                             temperature=0.3
                         )
                     )
@@ -190,7 +190,7 @@ PODCAST:"""
 
                 time.sleep(4)  # Rate limit: 15 RPM
 
-                if len(result) >= 50:
+                if len(result) >= 100:
                     return result
 
                 logger.warning(f"Short podcast segment, attempt {attempt+1}")

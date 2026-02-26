@@ -50,6 +50,7 @@ class GeminiSummarizer:
         self.model_name = model
         self.max_tokens = max_tokens
         self._client = None
+        self.quota_exhausted = False
 
     def _get_client(self):
         """Get or create Gemini client."""
@@ -130,6 +131,7 @@ PODCAST: A 200-250 word conversational segment that a podcast host would read al
                 # Check for quota exhaustion (daily limit)
                 if '429' in error_str and 'RESOURCE_EXHAUSTED' in error_str:
                     if 'GenerateRequestsPerDayPerProjectPerModel' in error_str:
+                        self.quota_exhausted = True
                         logger.warning("Daily quota exhausted, using fallback for remaining items")
                         break  # No point retrying, quota is gone for the day
                     else:
@@ -143,6 +145,74 @@ PODCAST: A 200-250 word conversational segment that a podcast host would read al
                     time.sleep(3)
 
         return self._fallback_summary(item), ""
+
+    def generate_podcast_segment(self, item: dict, max_retries: int = 2) -> str:
+        """Generate only a podcast segment for a pre-summarized item (e.g. TLDR articles).
+
+        Returns:
+            podcast_segment string, or empty string on failure.
+        """
+        if not self.api_key or self.quota_exhausted:
+            return ""
+
+        prompt = f"""Write a 200-250 word conversational podcast segment that a host would read aloud about this news item.
+Write in flowing prose, no bullet points. Explain why this matters and what it means for the AI community.
+
+Title: {item.get('title', 'No title')}
+Source: {item.get('source', 'Unknown')}
+Summary: {item.get('tldr', '')}
+
+PODCAST:"""
+
+        for attempt in range(max_retries):
+            try:
+                client = self._get_client()
+
+                if GEMINI_NEW_SDK:
+                    response = client.models.generate_content(
+                        model=self.model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            max_output_tokens=500,
+                            temperature=0.3
+                        )
+                    )
+                    result = response.text.strip()
+                else:
+                    response = client.generate_content(
+                        prompt,
+                        generation_config=genai.GenerationConfig(
+                            max_output_tokens=500,
+                            temperature=0.3
+                        )
+                    )
+                    result = response.text.strip()
+
+                time.sleep(4)  # Rate limit: 15 RPM
+
+                if len(result) >= 50:
+                    return result
+
+                logger.warning(f"Short podcast segment, attempt {attempt+1}")
+
+            except Exception as e:
+                error_str = str(e)
+                logger.error(f"Error generating podcast segment (attempt {attempt+1}): {e}")
+
+                if '429' in error_str and 'RESOURCE_EXHAUSTED' in error_str:
+                    if 'GenerateRequestsPerDayPerProjectPerModel' in error_str:
+                        self.quota_exhausted = True
+                        logger.warning("Daily quota exhausted, skipping remaining podcast segments")
+                        break
+                    wait_time = _extract_retry_delay(error_str)
+                    logger.info(f"Rate limited, waiting {wait_time}s before retry")
+                    time.sleep(wait_time)
+                    continue
+
+                if attempt < max_retries - 1:
+                    time.sleep(3)
+
+        return ""
 
     def _parse_dual_output(self, text: str) -> tuple[str, str]:
         """Parse response with TLDR: and PODCAST: sections."""

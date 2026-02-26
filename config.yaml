@@ -116,8 +116,8 @@ filters:
   max_age_hours: 168
   # Minimum content length to include
   min_content_length: 50
-  # Max items to process (9 items + 1 daily summary = 10, within 20/day free tier limit)
-  max_items: 9
+  # Max items to process (7 summarized + ~7 TLDR podcast segments + 2 scripts = ~17, within 20/day free tier limit)
+  max_items: 7
   # Keywords to prioritize (items with these get highlighted)
   priority_keywords:
     - "GPT"

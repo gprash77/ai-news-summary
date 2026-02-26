@@ -122,13 +122,25 @@ class YouTubeCollector:
             else:
                 published = None
 
-            # Get video description and optionally transcript
-            content = snippet.get('description', '')[:500]
+            # Get video content: prefer transcript > full description > title fallback
+            content = None
 
             if self.fetch_transcripts:
                 transcript = self._get_transcript(video_id)
                 if transcript:
                     content = transcript[:2000]
+
+            if not content:
+                # Fetch full description via videos endpoint (playlistItems can truncate)
+                description = self._get_full_description(youtube, video_id)
+                if not description:
+                    description = snippet.get('description', '')
+
+                if self._is_low_quality_description(description):
+                    title = snippet.get('title', 'No title')
+                    content = f"Video titled: {title}. No meaningful description or transcript available."
+                else:
+                    content = description[:500]
 
             video = {
                 'source_type': 'youtube',
@@ -144,18 +156,65 @@ class YouTubeCollector:
 
         return videos
 
+    def _get_full_description(self, youtube, video_id: str) -> Optional[str]:
+        """Fetch the full, untruncated video description via the videos endpoint."""
+        try:
+            response = youtube.videos().list(
+                part='snippet',
+                id=video_id
+            ).execute()
+            items = response.get('items', [])
+            if items:
+                return items[0]['snippet'].get('description', '')
+        except Exception as e:
+            logger.debug(f"Could not fetch full description for {video_id}: {e}")
+        return None
+
+    def _is_low_quality_description(self, description: str) -> bool:
+        """Detect bio/profile descriptions that won't produce useful summaries."""
+        if not description or len(description.strip()) < 30:
+            return True
+
+        text = description.lower()
+        boilerplate_signals = [
+            'subscribe', 'follow me on', 'follow us on', 'check out my',
+            'patreon.com', 'twitter.com', 'instagram.com', 'discord.gg',
+            'business inquiries', 'contact:', 'merch:', '#shorts',
+        ]
+        lines = [l.strip() for l in description.strip().splitlines() if l.strip()]
+        if not lines:
+            return True
+
+        # Count lines that are mostly links or boilerplate
+        low_quality_lines = 0
+        for line in lines:
+            lower = line.lower()
+            is_link = lower.startswith('http') or lower.startswith('www.')
+            is_boilerplate = any(signal in lower for signal in boilerplate_signals)
+            if is_link or is_boilerplate:
+                low_quality_lines += 1
+
+        # If more than 60% of lines are links/boilerplate, it's low-quality
+        return low_quality_lines / len(lines) > 0.6
+
     def _get_transcript(self, video_id: str) -> Optional[str]:
         """Fetch video transcript if available."""
         if not TRANSCRIPT_API_AVAILABLE:
             return None
 
         try:
-            # New API uses instance.fetch() method
             api = YouTubeTranscriptApi()
-            transcript_list = api.fetch(video_id)
-            # Combine transcript segments
-            full_text = ' '.join(segment.text for segment in transcript_list)
-            return full_text
+            # Try default language first, then auto-generated English
+            for lang in [None, ['en'], ['en-US']]:
+                try:
+                    if lang is None:
+                        transcript_list = api.fetch(video_id)
+                    else:
+                        transcript_list = api.fetch(video_id, languages=lang)
+                    full_text = ' '.join(segment.text for segment in transcript_list)
+                    return full_text
+                except Exception:
+                    continue
         except Exception as e:
             logger.debug(f"Could not fetch transcript for {video_id}: {e}")
-            return None
+        return None

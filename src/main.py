@@ -138,6 +138,13 @@ def summarize_items(items: list[dict], config: dict) -> tuple[list[dict], str]:
     for item in to_summarize:
         item['tldr'], item['podcast_segment'] = summarizer.summarize_item(item)
 
+    # Generate podcast segments for pre-summarized items (e.g. TLDR newsletter articles)
+    needs_podcast = [item for item in items if item.get('tldr') and not item.get('podcast_segment')]
+    if needs_podcast:
+        logger.info(f"Generating podcast segments for {len(needs_podcast)} pre-summarized items...")
+        for item in needs_podcast:
+            item['podcast_segment'] = summarizer.generate_podcast_segment(item)
+
     # Generate overall summary
     logger.info("Generating daily summary...")
     daily_summary = summarizer.generate_daily_summary(items)

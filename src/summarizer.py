@@ -89,7 +89,7 @@ Respond in EXACTLY this format (both sections are REQUIRED):
 
 TLDR: A 2-3 sentence concise summary.
 
-PODCAST: A 200-250 word conversational segment that a podcast host would read aloud. Write in flowing prose, no bullet points. Explain why this matters and what it means for the AI community."""
+PODCAST: A 200-250 word conversational segment that a podcast host would read aloud. Write in flowing prose, no bullet points. Explain why this matters and what it means for the AI community. Do NOT open with greetings or "Welcome" — jump straight into the story. Do NOT close with sign-off phrases — end when the story content ends."""
 
         for attempt in range(max_retries):
             try:
@@ -157,6 +157,8 @@ PODCAST: A 200-250 word conversational segment that a podcast host would read al
 
         prompt = f"""Write a 200-250 word conversational podcast segment that a host would read aloud about this news item.
 Write in flowing prose, no bullet points. Explain why this matters and what it means for the AI community.
+Do NOT open with greetings or "Welcome" — jump straight into the story.
+Do NOT close with sign-off phrases like "stay tuned" or "that's all" — end when the story content ends.
 
 Title: {item.get('title', 'No title')}
 Source: {item.get('source', 'Unknown')}

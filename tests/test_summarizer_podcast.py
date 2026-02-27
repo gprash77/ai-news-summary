@@ -1,4 +1,4 @@
-"""Tests for generate_podcast_segment() and TLDR podcast integration."""
+"""Tests for generate_podcast_segment(), generate_podcast_script(), and TLDR podcast integration."""
 
 import sys
 import os
@@ -149,3 +149,82 @@ class TestSummarizeItemsIntegration:
 
         # Verify the API was called 3 times total (1 summarize + 2 podcast segments)
         assert mock_client.models.generate_content.call_count == 3
+
+
+class TestGeneratePodcastScript:
+    """Tests for GeminiSummarizer.generate_podcast_script() — the stitching step.
+
+    The key regression: with max_output_tokens=2000, 14 segments couldn't fit,
+    so TLDR items (appended last as has_summary) were truncated/dropped.
+    The fix is direct Python concatenation — no API call, no truncation.
+    """
+
+    def _make_summarizer(self):
+        from summarizer import GeminiSummarizer
+        return GeminiSummarizer(api_key="fake-key")
+
+    def _make_segment(self, title: str, source: str = "TLDR AI") -> dict:
+        """Helper: item with a pre-generated podcast_segment."""
+        return {
+            "title": title,
+            "source": source,
+            "podcast_segment": f"This is the podcast segment for {title}. It covers the topic in detail for the AI community.",
+        }
+
+    def test_empty_items_returns_empty_string(self):
+        s = self._make_summarizer()
+        assert s.generate_podcast_script([]) == ""
+
+    def test_items_without_segments_returns_empty_string(self):
+        s = self._make_summarizer()
+        items = [{"title": "No segment", "source": "RSS"}]
+        assert s.generate_podcast_script(items) == ""
+
+    def test_all_14_stories_included_regression(self):
+        """Regression: 14 items must all appear in the output (was truncated to ~7-8 before fix)."""
+        s = self._make_summarizer()
+        items = [self._make_segment(f"Story {i}", "YouTube" if i <= 7 else "TLDR AI") for i in range(1, 15)]
+        script = s.generate_podcast_script(items)
+
+        for i in range(1, 15):
+            assert f"Story {i}" in script, f"Story {i} missing from podcast script"
+
+    def test_tldr_items_at_end_are_included(self):
+        """Regression: TLDR items (appended last as has_summary) must appear in script."""
+        s = self._make_summarizer()
+        # Simulate real ordering: non-TLDR first, TLDR last
+        items = [
+            self._make_segment("YouTube Video 1", "YouTube"),
+            self._make_segment("RSS Article 1", "TechCrunch"),
+            self._make_segment("TLDR Article 1", "TLDR AI"),
+            self._make_segment("TLDR Article 2", "TLDR AI"),
+            self._make_segment("TLDR Article 3", "TLDR AI"),
+        ]
+        script = s.generate_podcast_script(items)
+        assert "TLDR Article 1" in script
+        assert "TLDR Article 2" in script
+        assert "TLDR Article 3" in script
+
+    def test_script_has_intro_and_outro(self):
+        s = self._make_summarizer()
+        items = [self._make_segment("Test Story")]
+        script = s.generate_podcast_script(items)
+        assert "Welcome to AI News Daily" in script
+        assert len(script) > 100
+
+    def test_no_api_call_made(self):
+        """Script generation must not consume a Gemini API call (quota preservation)."""
+        s = self._make_summarizer()
+        mock_client = MagicMock()
+        s._client = mock_client
+        items = [self._make_segment("Story A"), self._make_segment("Story B")]
+        s.generate_podcast_script(items)
+        mock_client.models.generate_content.assert_not_called()
+
+    def test_segment_text_appears_verbatim(self):
+        """Each segment's text must appear in the script unchanged."""
+        s = self._make_summarizer()
+        unique_text = "unique-canary-phrase-xyz-987"
+        items = [{"title": "Test", "source": "TLDR", "podcast_segment": unique_text * 5}]
+        script = s.generate_podcast_script(items)
+        assert unique_text in script

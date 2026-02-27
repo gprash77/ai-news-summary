@@ -301,86 +301,40 @@ Output {len(selected_items)} bullets, each with a markdown link:"""
         logger.warning("Using fallback summary after retries failed")
         return self._generate_bullet_summary(items)
 
-    def generate_podcast_script(self, items: list[dict], max_retries: int = 2) -> str:
-        """Stitch per-item podcast segments into a full ~20-minute podcast script.
+    def generate_podcast_script(self, items: list[dict]) -> str:
+        """Stitch per-item podcast segments into a full podcast script.
 
-        Only items that have a 'podcast_segment' key are included.
-        Returns the full script string, or empty string on failure.
+        Concatenates segments directly in Python — no API call, so there is no
+        token-limit truncation and no quota cost. Only items that have a
+        'podcast_segment' key are included.
+        Returns the full script string, or empty string if no segments exist.
         """
         segments = [item for item in items if item.get('podcast_segment')]
         if not segments:
             logger.info("No podcast segments found — skipping podcast script generation")
             return ""
 
-        segments_text = ""
-        for i, item in enumerate(segments, 1):
-            title = item.get('title', 'Untitled')
-            source = item.get('source', 'Unknown')
-            segment = item['podcast_segment']
-            segments_text += f"\n--- Story {i}: {title} (Source: {source}) ---\n{segment}\n"
+        _TRANSITIONS = [
+            "Moving on,",
+            "In other news,",
+            "Next up,",
+            "Also making headlines today,",
+            "On a related note,",
+        ]
 
-        prompt = f"""You are producing a daily AI news podcast called "AI News Daily".
-Write a complete, natural-sounding podcast script using the story segments below.
+        parts = ["Welcome to AI News Daily, your daily briefing on artificial intelligence.\n"]
 
-Requirements:
-- Open with: "Welcome to AI News Daily, your daily briefing on artificial intelligence."
-- Include a brief (1-2 sentence) transition between each story
-- Insert each story segment VERBATIM — do not rewrite or shorten them
-- Close with a friendly outro
-- The tone should be warm, informative, and conversational
-- Do NOT add bullet points, headers, or stage directions
+        for i, item in enumerate(segments):
+            if i > 0:
+                transition = _TRANSITIONS[i % len(_TRANSITIONS)]
+                parts.append(f"\n{transition}\n")
+            parts.append(item['podcast_segment'])
 
-Story segments to include (use verbatim):
-{segments_text}
+        parts.append("\n\nThat's all for today's AI News Daily. Thanks for listening, stay curious, and we'll see you tomorrow!")
 
-Write the complete podcast script now:"""
-
-        for attempt in range(max_retries):
-            try:
-                client = self._get_client()
-
-                if GEMINI_NEW_SDK:
-                    response = client.models.generate_content(
-                        model=self.model_name,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            max_output_tokens=2000,
-                            temperature=0.4
-                        )
-                    )
-                    result = response.text.strip()
-                else:
-                    response = client.generate_content(
-                        prompt,
-                        generation_config=genai.GenerationConfig(
-                            max_output_tokens=2000,
-                            temperature=0.4
-                        )
-                    )
-                    result = response.text.strip()
-
-                time.sleep(4)
-
-                if len(result) > 200:
-                    logger.info(f"Podcast script generated ({len(result)} chars, {len(segments)} stories)")
-                    return result
-
-                logger.warning(f"Short podcast script on attempt {attempt+1}")
-
-            except Exception as e:
-                error_str = str(e)
-                logger.error(f"Error generating podcast script (attempt {attempt+1}): {e}")
-                if '429' in error_str and 'RESOURCE_EXHAUSTED' in error_str:
-                    if 'GenerateRequestsPerDayPerProjectPerModel' in error_str:
-                        break
-                    wait_time = _extract_retry_delay(error_str)
-                    logger.info(f"Rate limited, waiting {wait_time}s before retry")
-                    time.sleep(wait_time)
-                    continue
-                if attempt < max_retries - 1:
-                    time.sleep(5)
-
-        return ""
+        script = "\n".join(parts)
+        logger.info(f"Podcast script assembled ({len(script)} chars, {len(segments)} stories)")
+        return script
 
     def _fallback_summary(self, item: dict) -> str:
         """Generate a simple summary when API is unavailable."""

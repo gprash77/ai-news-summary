@@ -89,15 +89,13 @@ gemini:
   max_tokens: 1024
 
 email:
-  # Your Gmail address (sender)
-  from: "REDACTED_EMAIL"
+  # Sender Gmail address (set via EMAIL_FROM env var or GitHub Secret)
+  from_env: "EMAIL_FROM"
   # Email subject prefix
   subject_prefix: "AI News Summary"
-  # Recipients (you + friends)
-  # First email is in "To", rest are in "BCC" for privacy
-  subscribers:
-    - "REDACTED_EMAIL"
-    - "REDACTED_EMAIL"
+  # Recipients (set via EMAIL_SUBSCRIBERS env var or GitHub Secret)
+  # Comma-separated list, first is "To", rest are "BCC" for privacy
+  subscribers_env: "EMAIL_SUBSCRIBERS"
 
 audio:
   enabled: true

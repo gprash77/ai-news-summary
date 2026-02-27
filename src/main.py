@@ -3,6 +3,7 @@
 
 import argparse
 import logging
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -261,10 +262,13 @@ def run(
     if not skip_email:
         email_config = config.get('email', {})
         twitter_config = config.get('sources', {}).get('twitter', {})
-        if email_config.get('subscribers'):
+        from_email = os.environ.get(email_config.get('from_env', 'EMAIL_FROM'), email_config.get('from', ''))
+        subscribers_str = os.environ.get(email_config.get('subscribers_env', 'EMAIL_SUBSCRIBERS'), '')
+        subscribers = [s.strip() for s in subscribers_str.split(',') if s.strip()] if subscribers_str else email_config.get('subscribers', [])
+        if subscribers:
             emailer = EmailSender(
-                from_email=email_config['from'],
-                subscribers=email_config['subscribers'],
+                from_email=from_email,
+                subscribers=subscribers,
                 subject_prefix=email_config.get('subject_prefix', 'AI News Summary'),
                 twitter_accounts=twitter_config.get('accounts', [])
             )

@@ -65,6 +65,7 @@ sources:
   anthropic:
     enabled: true
     max_articles: 3
+    max_research: 3
     max_age_hours: 72
 
   newsletters:

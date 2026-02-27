@@ -99,6 +99,7 @@ def collect_all(config: dict) -> list[dict]:
         logger.info("Collecting from Anthropic news...")
         anthropic_collector = AnthropicCollector(
             max_articles=anthropic_config.get('max_articles', 3),
+            max_research=anthropic_config.get('max_research', 3),
             max_age_hours=anthropic_config.get('max_age_hours', 72)
         )
         items = anthropic_collector.collect()

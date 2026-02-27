@@ -1,5 +1,6 @@
-"""Anthropic News Collector - Scrapes anthropic.com/news (no RSS feed available)."""
+"""Anthropic News & Research Collector - Scrapes anthropic.com/news and /research."""
 
+import json
 import time
 import logging
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.anthropic.com"
 NEWS_URL = f"{BASE_URL}/news"
+RESEARCH_URL = f"{BASE_URL}/research"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -21,45 +23,59 @@ HEADERS = {
 
 
 class AnthropicCollector:
-    """Collects recent articles from anthropic.com/news by scraping."""
+    """Collects recent articles from anthropic.com/news and /research by scraping."""
 
-    def __init__(self, max_articles: int = 3, max_age_hours: int = 72):
+    def __init__(self, max_articles: int = 3, max_research: int = 3, max_age_hours: int = 72):
         self.max_articles = max_articles
+        self.max_research = max_research
         self.max_age_hours = max_age_hours
         self.session = requests.Session()
         self.session.headers.update(HEADERS)
 
     def collect(self) -> list[dict]:
-        """Scrape anthropic.com/news and return recent articles."""
+        """Scrape anthropic.com/news and /research, return recent articles."""
+        all_articles = []
+
+        # Collect from /news
+        news = self._collect_from_page(NEWS_URL, "/news/", self.max_articles, "Anthropic News")
+        all_articles.extend(news)
+
+        # Collect from /research
+        research = self._collect_from_page(RESEARCH_URL, "/research/", self.max_research, "Anthropic Research")
+        all_articles.extend(research)
+
+        logger.info(f"AnthropicCollector: fetched {len(all_articles)} articles ({len(news)} news, {len(research)} research)")
+        return all_articles
+
+    def _collect_from_page(self, listing_url: str, prefix: str, max_items: int, source_label: str) -> list[dict]:
+        """Collect articles from a listing page."""
         try:
-            slugs = self._get_news_slugs()
+            slugs = self._get_slugs(listing_url, prefix)
             if not slugs:
-                logger.warning("AnthropicCollector: no article slugs found on news page")
+                logger.warning(f"AnthropicCollector: no slugs found on {listing_url}")
                 return []
 
             articles = []
             for slug in slugs:
-                if len(articles) >= self.max_articles:
+                if len(articles) >= max_items:
                     break
-                article = self._fetch_article(slug)
+                article = self._fetch_article(slug, source_label)
                 if article:
                     articles.append(article)
                 time.sleep(1)
-
-            logger.info(f"AnthropicCollector: fetched {len(articles)} articles")
             return articles
 
         except Exception as e:
-            logger.error(f"AnthropicCollector error: {e}")
+            logger.error(f"AnthropicCollector error for {listing_url}: {e}")
             return []
 
-    def _get_news_slugs(self) -> list[str]:
-        """Fetch the news listing page and extract /news/SLUG hrefs."""
+    def _get_slugs(self, listing_url: str, prefix: str) -> list[str]:
+        """Fetch a listing page and extract hrefs matching the prefix."""
         try:
-            resp = self.session.get(NEWS_URL, timeout=15)
+            resp = self.session.get(listing_url, timeout=15)
             resp.raise_for_status()
         except Exception as e:
-            logger.error(f"Failed to fetch {NEWS_URL}: {e}")
+            logger.error(f"Failed to fetch {listing_url}: {e}")
             return []
 
         soup = BeautifulSoup(resp.text, "lxml")
@@ -68,15 +84,14 @@ class AnthropicCollector:
 
         for a in soup.find_all("a", href=True):
             href = a["href"]
-            # Match /news/SLUG but not /news itself (the listing page)
-            if href.startswith("/news/") and len(href) > len("/news/"):
+            if href.startswith(prefix) and len(href) > len(prefix):
                 if href not in seen:
                     seen.add(href)
                     slugs.append(href)
 
         return slugs
 
-    def _fetch_article(self, path: str) -> Optional[dict]:
+    def _fetch_article(self, path: str, source_label: str = "Anthropic") -> Optional[dict]:
         """Fetch a single article page and parse it."""
         url = f"{BASE_URL}{path}"
         try:
@@ -100,7 +115,7 @@ class AnthropicCollector:
 
         return {
             "source_type": "rss",
-            "source": "Anthropic",
+            "source": source_label,
             "title": title,
             "url": url,
             "content": content[:2000],
@@ -139,7 +154,19 @@ class AnthropicCollector:
             if dt:
                 return dt
 
-        # 3. No date found — treat as recent (within window)
+        # 3. JSON-LD publishedOn (used by /research pages)
+        for script in soup.find_all("script", type="application/ld+json"):
+            try:
+                data = json.loads(script.string)
+                for key in ("publishedOn", "datePublished"):
+                    if key in data:
+                        dt = self._parse_date(data[key])
+                        if dt:
+                            return dt
+            except (json.JSONDecodeError, TypeError):
+                continue
+
+        # 4. No date found — treat as recent (within window)
         return None
 
     def _extract_content(self, soup: BeautifulSoup) -> str:

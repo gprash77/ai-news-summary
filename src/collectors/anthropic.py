@@ -114,7 +114,7 @@ class AnthropicCollector:
         content = self._extract_content(soup)
 
         return {
-            "source_type": "rss",
+            "source_type": "anthropic_research" if "/research/" in url else "anthropic_news",
             "source": source_label,
             "title": title,
             "url": url,

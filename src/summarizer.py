@@ -244,7 +244,7 @@ PODCAST:"""
         if not self.api_key:
             return self._generate_bullet_summary(items)
 
-        # Select balanced items: 2 YouTube, 2 newsletter, 1 RSS
+        # Select balanced items across source types
         selected_items = self._select_balanced_items(items)
 
         # Prepare concise content for summary
@@ -370,7 +370,7 @@ Output {len(selected_items)} bullets, each with a markdown link:"""
         return "\n".join(bullets)
 
     def _select_balanced_items(self, items: list[dict], youtube_count: int = 2, newsletter_count: int = 3, rss_count: int = 1) -> list[dict]:
-        """Select items balanced across source types: 2 YouTube, 3 newsletter, 1 RSS."""
+        """Select items balanced across source types."""
         by_type = {}
         for item in items:
             source_type = item.get('source_type', 'other')
@@ -388,6 +388,10 @@ Output {len(selected_items)} bullets, each with a markdown link:"""
             selected.extend(by_type['rss'][:rss_count])
         if 'twitter' in by_type:
             selected.extend(by_type['twitter'][:1])
+        if 'anthropic_news' in by_type:
+            selected.extend(by_type['anthropic_news'][:2])
+        if 'anthropic_research' in by_type:
+            selected.extend(by_type['anthropic_research'][:2])
 
         return selected
 

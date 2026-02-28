@@ -4,6 +4,7 @@
 import argparse
 import logging
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -154,6 +155,65 @@ def summarize_items(items: list[dict], config: dict) -> tuple[list[dict], str]:
     return items, daily_summary
 
 
+def _title_words(title: str) -> set:
+    """Extract significant words from a title for comparison."""
+    stop_words = {'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to',
+                  'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were',
+                  'be', 'been', 'has', 'have', 'had', 'its', 'our', 'this', 'that'}
+    words = set(re.findall(r'[a-z0-9]+', title.lower()))
+    return words - stop_words
+
+
+def deduplicate_items(items: list[dict], threshold: float = 0.5) -> list[dict]:
+    """Remove near-duplicate items covering the same story.
+
+    Compares titles using word overlap. When duplicates are found, keeps the
+    item from the original source (e.g. anthropic_news over rss).
+    """
+    # Source priority: prefer original/primary sources
+    source_priority = {
+        'anthropic_news': 0,
+        'anthropic_research': 0,
+        'newsletter': 1,
+        'rss': 2,
+        'youtube': 1,
+        'twitter': 2,
+    }
+
+    kept = []
+    for item in items:
+        title_words = _title_words(item.get('title', ''))
+        if not title_words:
+            kept.append(item)
+            continue
+
+        duplicate_of = None
+        for i, existing in enumerate(kept):
+            existing_words = _title_words(existing.get('title', ''))
+            if not existing_words:
+                continue
+            overlap = len(title_words & existing_words) / min(len(title_words), len(existing_words))
+            if overlap >= threshold:
+                duplicate_of = i
+                break
+
+        if duplicate_of is not None:
+            existing = kept[duplicate_of]
+            new_prio = source_priority.get(item.get('source_type', 'other'), 3)
+            existing_prio = source_priority.get(existing.get('source_type', 'other'), 3)
+            if new_prio < existing_prio:
+                logger.info(f"Dedup: replacing '{existing.get('title', '')[:50]}' ({existing.get('source_type')}) with '{item.get('title', '')[:50]}' ({item.get('source_type')})")
+                kept[duplicate_of] = item
+            else:
+                logger.info(f"Dedup: dropping '{item.get('title', '')[:50]}' ({item.get('source_type')}) - similar to '{existing.get('title', '')[:50]}'")
+        else:
+            kept.append(item)
+
+    if len(kept) < len(items):
+        logger.info(f"Deduplication: {len(items)} -> {len(kept)} items ({len(items) - len(kept)} duplicates removed)")
+    return kept
+
+
 def run(
     config_path: str = None,
     skip_email: bool = False,
@@ -176,6 +236,9 @@ def run(
         return
 
     logger.info(f"Total items collected: {len(items)}")
+
+    # Deduplicate items covering the same story across sources
+    items = deduplicate_items(items)
 
     # Filter to AI-related content using fast keyword matching
     # (All our sources are AI-focused, so this is just a safety check)

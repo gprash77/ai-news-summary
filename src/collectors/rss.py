@@ -66,7 +66,7 @@ class RSSCollector:
         content = ''
         if 'content' in entry and entry.content:
             content = entry.content[0].get('value', '')
-        elif 'summary' in entry:
+        if not content and 'summary' in entry:
             content = entry.summary
 
         # Strip HTML tags

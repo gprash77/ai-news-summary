@@ -330,6 +330,9 @@ Output {len(selected_items)} bullets, each with a markdown link:"""
             if i > 0:
                 transition = _TRANSITIONS[i % len(_TRANSITIONS)]
                 parts.append(f"\n{transition}\n")
+            if item.get('source_type') == 'youtube':
+                source_name = item.get('source', 'a creator')
+                parts.append(f"This next story comes from {source_name}'s YouTube channel — check the link in your email to watch.\n")
             parts.append(item['podcast_segment'])
 
         parts.append("\n\nThat's all for today's AI News Daily. Thanks for listening, stay curious, and we'll see you tomorrow!")
@@ -389,9 +392,13 @@ Output {len(selected_items)} bullets, each with a markdown link:"""
         if 'twitter' in by_type:
             selected.extend(by_type['twitter'][:1])
         if 'anthropic_news' in by_type:
-            selected.extend(by_type['anthropic_news'][:2])
+            selected.extend(by_type['anthropic_news'][:1])
         if 'anthropic_research' in by_type:
-            selected.extend(by_type['anthropic_research'][:2])
+            selected.extend(by_type['anthropic_research'][:1])
+        if 'openai_research' in by_type:
+            selected.extend(by_type['openai_research'][:1])
+        if 'google_research' in by_type:
+            selected.extend(by_type['google_research'][:1])
 
         return selected
 

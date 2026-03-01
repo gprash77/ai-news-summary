@@ -62,10 +62,17 @@ sources:
       - https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
       - https://feeds.arstechnica.com/arstechnica/ai/index.xml
 
+  research_feeds:
+    enabled: true
+    max_items_per_feed: 1
+    feeds:
+      - https://openai.com/blog/rss.xml
+      - https://blog.google/technology/ai/rss/
+
   anthropic:
     enabled: true
-    max_articles: 3
-    max_research: 2
+    max_articles: 1
+    max_research: 1
     max_age_hours: 72
 
   newsletters:

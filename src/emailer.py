@@ -303,7 +303,7 @@ class EmailSender:
     def _group_by_source(self, items: list[dict]) -> dict[str, list[dict]]:
         """Group items by source type."""
         grouped = {}
-        order = ['youtube', 'twitter', 'newsletter', 'rss']
+        order = ['youtube', 'twitter', 'newsletter', 'rss', 'anthropic_news', 'anthropic_research', 'openai_research', 'google_research']
 
         for item in items:
             source_type = item.get('source_type', 'other')
@@ -329,5 +329,9 @@ class EmailSender:
             'twitter': '🐦',
             'newsletter': '📰',
             'rss': '📡',
+            'anthropic_news': '🔶',
+            'anthropic_research': '🔬',
+            'openai_research': '🧪',
+            'google_research': '🔍',
         }
         return icons.get(source_type, '📄')

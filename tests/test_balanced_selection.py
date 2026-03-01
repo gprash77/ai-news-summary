@@ -16,14 +16,14 @@ class TestSelectBalancedItems:
         s = _make_summarizer()
         items = [_make_item("anthropic_news", f"news-{i}") for i in range(3)]
         selected = s._select_balanced_items(items)
-        assert len(selected) == 2
+        assert len(selected) == 1
         assert all(i["source_type"] == "anthropic_news" for i in selected)
 
     def test_anthropic_research_included(self):
         s = _make_summarizer()
         items = [_make_item("anthropic_research", f"research-{i}") for i in range(3)]
         selected = s._select_balanced_items(items)
-        assert len(selected) == 2
+        assert len(selected) == 1
         assert all(i["source_type"] == "anthropic_research" for i in selected)
 
     def test_full_mix_all_sources(self):
@@ -42,9 +42,9 @@ class TestSelectBalancedItems:
         assert types.count("newsletter") == 3
         assert types.count("rss") == 1
         assert types.count("twitter") == 1
-        assert types.count("anthropic_news") == 2
-        assert types.count("anthropic_research") == 2
-        assert len(selected) == 11
+        assert types.count("anthropic_news") == 1
+        assert types.count("anthropic_research") == 1
+        assert len(selected) == 9
 
     def test_no_anthropic_still_works(self):
         s = _make_summarizer()

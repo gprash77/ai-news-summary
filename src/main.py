@@ -94,6 +94,26 @@ def collect_all(config: dict) -> list[dict]:
         all_items.extend(items)
         logger.info(f"Collected {len(items)} items from YouTube")
 
+    # Research feeds (OpenAI, Google AI)
+    research_config = config.get('sources', {}).get('research_feeds', {})
+    if research_config.get('feeds') and research_config.get('enabled', True):
+        logger.info("Collecting from research feeds...")
+        rss_collector = RSSCollector(
+            feeds=research_config['feeds'],
+            max_age_hours=max_age,
+            max_items_per_feed=research_config.get('max_items_per_feed', 1)
+        )
+        items = rss_collector.collect()
+        # Override source_type based on feed URL
+        for item in items:
+            url = item.get('url', '') + ' ' + item.get('source', '')
+            if 'openai' in url.lower():
+                item['source_type'] = 'openai_research'
+            elif 'google' in url.lower() or 'deepmind' in url.lower():
+                item['source_type'] = 'google_research'
+        all_items.extend(items)
+        logger.info(f"Collected {len(items)} items from research feeds")
+
     # Anthropic news (scraped)
     anthropic_config = config.get('sources', {}).get('anthropic', {})
     if anthropic_config.get('enabled', True):
@@ -148,6 +168,19 @@ def summarize_items(items: list[dict], config: dict) -> tuple[list[dict], str]:
         for item in needs_podcast:
             item['podcast_segment'] = summarizer.generate_podcast_segment(item)
 
+    # Ensure all research items have podcast segments (they should never be skipped)
+    research_types = {'anthropic_research', 'openai_research', 'google_research'}
+    research_missing_podcast = [
+        item for item in items
+        if item.get('source_type') in research_types
+        and item.get('tldr')
+        and not item.get('podcast_segment')
+    ]
+    if research_missing_podcast:
+        logger.info(f"Generating podcast segments for {len(research_missing_podcast)} research items...")
+        for item in research_missing_podcast:
+            item['podcast_segment'] = summarizer.generate_podcast_segment(item)
+
     # Generate overall summary
     logger.info("Generating daily summary...")
     daily_summary = summarizer.generate_daily_summary(items)
@@ -174,6 +207,8 @@ def deduplicate_items(items: list[dict], threshold: float = 0.5) -> list[dict]:
     source_priority = {
         'anthropic_news': 0,
         'anthropic_research': 0,
+        'openai_research': 0,
+        'google_research': 0,
         'newsletter': 1,
         'rss': 2,
         'youtube': 1,

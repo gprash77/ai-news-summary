@@ -80,9 +80,13 @@ def collect_all(config: dict) -> list[dict]:
     elif (has_tweets or has_accounts) and not twitter_config.get('enabled', True):
         logger.info("Twitter collection disabled in config")
 
-    # YouTube
+    # YouTube (optionally restricted to certain days of the week)
     youtube_config = config.get('sources', {}).get('youtube', {})
-    if youtube_config.get('channels'):
+    youtube_days = youtube_config.get('youtube_days', [])
+    today = datetime.now().weekday()
+    if youtube_days and today not in youtube_days:
+        logger.info(f"Skipping YouTube collection (today={today}, enabled days={youtube_days})")
+    elif youtube_config.get('channels'):
         logger.info("Collecting from YouTube...")
         youtube_collector = YouTubeCollector(
             channels=youtube_config['channels'],
@@ -197,11 +201,23 @@ def _title_words(title: str) -> set:
     return words - stop_words
 
 
+def _content_words(content: str) -> set:
+    """Extract significant words from the first 500 chars of content for comparison."""
+    stop_words = {'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to',
+                  'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were',
+                  'be', 'been', 'has', 'have', 'had', 'its', 'our', 'this', 'that',
+                  'it', 'not', 'no', 'so', 'if', 'as', 'we', 'can', 'will', 'also',
+                  'more', 'about', 'up', 'out', 'just', 'than', 'into', 'new'}
+    words = set(re.findall(r'[a-z0-9]+', content[:500].lower()))
+    return words - stop_words
+
+
 def deduplicate_items(items: list[dict], threshold: float = 0.5) -> list[dict]:
     """Remove near-duplicate items covering the same story.
 
-    Compares titles using word overlap. When duplicates are found, keeps the
-    item from the original source (e.g. anthropic_news over rss).
+    Compares titles using word overlap, with a secondary content-based check
+    for items with partially similar titles. When duplicates are found, keeps
+    the item from the original source (e.g. anthropic_news over rss).
     """
     # Source priority: prefer original/primary sources
     source_priority = {
@@ -231,6 +247,15 @@ def deduplicate_items(items: list[dict], threshold: float = 0.5) -> list[dict]:
             if overlap >= threshold:
                 duplicate_of = i
                 break
+            # Secondary check: titles somewhat related, compare content
+            if overlap >= 0.25:
+                cw = _content_words(item.get('content', ''))
+                ecw = _content_words(existing.get('content', ''))
+                if cw and ecw:
+                    content_overlap = len(cw & ecw) / min(len(cw), len(ecw))
+                    if content_overlap >= 0.4:
+                        duplicate_of = i
+                        break
 
         if duplicate_of is not None:
             existing = kept[duplicate_of]

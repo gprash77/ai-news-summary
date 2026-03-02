@@ -51,6 +51,8 @@ sources:
     max_videos_per_channel: 1
     # Fetch transcripts for better summaries (slower but better)
     fetch_transcripts: true
+    # Only collect YouTube on these days (0=Mon, 6=Sun). Empty = every day.
+    youtube_days: [5, 6]  # Saturday and Sunday only
 
   rss:
     enabled: true

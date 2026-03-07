@@ -39,14 +39,26 @@ sources:
     enabled: true
 
   youtube:
-    # YouTube channels to monitor (supports @handles or channel IDs)
+    # YouTube channels pool (supports @handles or channel IDs)
+    # A random subset is selected each run for variety
     channels:
-      - "@peteryangyt"        # Peter Yang
-      - "@howiaipodcast"      # How I AI (Claire Vo)
-      - "@growproduct"        # Grow Product
-      - "@LennysPodcast"      # Lenny's Podcast (AI filter will skip non-AI episodes)
-      - "@matthew_berman"     # Matthew Berman
+      - "@peteryangyt"           # Peter Yang
+      - "@howiaipodcast"         # How I AI (Claire Vo)
+      - "@growproduct"           # Grow Product
+      - "@LennysPodcast"        # Lenny's Podcast
+      - "@matthew_berman"        # Matthew Berman
       - "@aiexplained-official"  # AI Explained
+      - "@Chase-H-AI"           # Chase AI (Chase Hannegan)
+      - "@TwoMinutePapers"      # Two Minute Papers
+      - "@Fireship"             # Fireship
+      - "@TheAIGRID"            # The AI Grid
+      - "@intheworldofai"       # World of AI
+      - "@samwitteveenai"       # Sam Witteveen
+      - "@yannickilcher"        # Yannic Kilcher
+      - "@NetworkChuck"         # NetworkChuck
+      - "@deepmind"             # Google DeepMind
+    # How many channels to randomly select each run (from the pool above)
+    channels_per_run: 5
     # How many recent videos to fetch per channel (1 = latest only)
     max_videos_per_channel: 1
     # Fetch transcripts for better summaries (slower but better)

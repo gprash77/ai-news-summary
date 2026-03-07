@@ -4,6 +4,7 @@
 import argparse
 import logging
 import os
+import random
 import re
 import sys
 from datetime import datetime
@@ -87,9 +88,14 @@ def collect_all(config: dict) -> list[dict]:
     if youtube_days and today not in youtube_days:
         logger.info(f"Skipping YouTube collection (today={today}, enabled days={youtube_days})")
     elif youtube_config.get('channels'):
+        channels = youtube_config['channels']
+        channels_per_run = youtube_config.get('channels_per_run')
+        if channels_per_run and channels_per_run < len(channels):
+            channels = random.sample(channels, channels_per_run)
+            logger.info(f"YouTube rotation: selected {channels_per_run} of {len(youtube_config['channels'])} channels: {channels}")
         logger.info("Collecting from YouTube...")
         youtube_collector = YouTubeCollector(
-            channels=youtube_config['channels'],
+            channels=channels,
             max_videos_per_channel=youtube_config.get('max_videos_per_channel', 3),
             fetch_transcripts=youtube_config.get('fetch_transcripts', True),
             max_age_hours=max_age

@@ -19,5 +19,8 @@ __pycache__/
 *.swp
 *.swo
 
+# Audio output
+audio/
+
 # macOS
 .DS_Store

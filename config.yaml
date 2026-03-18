@@ -82,6 +82,9 @@ sources:
     feeds:
       - https://openai.com/blog/rss.xml
       - https://blog.google/technology/ai/rss/
+      - https://deepmind.google/blog/rss.xml
+      - https://www.technologyreview.com/topic/artificial-intelligence/feed
+      - https://huggingface.co/blog/feed.xml
 
   anthropic:
     enabled: true

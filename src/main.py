@@ -21,6 +21,7 @@ from summarizer import GeminiSummarizer
 from emailer import EmailSender
 from archiver import Archiver
 from audio_generator import AudioGenerator
+from seen_articles import SeenArticles
 
 # Configure logging
 logging.basicConfig(
@@ -117,10 +118,15 @@ def collect_all(config: dict) -> list[dict]:
         # Override source_type based on feed URL
         for item in items:
             url = item.get('url', '') + ' ' + item.get('source', '')
-            if 'openai' in url.lower():
+            url_lower = url.lower()
+            if 'openai' in url_lower:
                 item['source_type'] = 'openai_research'
-            elif 'google' in url.lower() or 'deepmind' in url.lower():
+            elif 'google' in url_lower or 'deepmind' in url_lower:
                 item['source_type'] = 'google_research'
+            elif 'technologyreview' in url_lower:
+                item['source_type'] = 'mit_tech_review'
+            elif 'huggingface' in url_lower:
+                item['source_type'] = 'huggingface'
         all_items.extend(items)
         logger.info(f"Collected {len(items)} items from research feeds")
 
@@ -306,6 +312,14 @@ def run(
     # Deduplicate items covering the same story across sources
     items = deduplicate_items(items)
 
+    # Filter out articles seen in previous runs
+    seen = SeenArticles()
+    items = seen.filter_unseen(items)
+
+    if not items:
+        logger.warning("No new items after filtering previously seen articles")
+        return
+
     # Filter to AI-related content using fast keyword matching
     # (All our sources are AI-focused, so this is just a safety check)
     from summarizer import GeminiSummarizer
@@ -409,6 +423,10 @@ def run(
                 logger.error("Failed to send email")
         else:
             logger.warning("No subscribers configured - skipping email")
+
+    # Mark all processed article URLs as seen for future runs
+    seen.mark_seen([item['url'] for item in items if item.get('url')])
+    seen.save()
 
     logger.info("Done!")
 

@@ -43,6 +43,14 @@ jobs:
       run: |
         cd src && python main.py
     
+    - name: Commit seen articles tracker
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add seen_articles.json
+        git diff --cached --quiet || git commit -m "Update seen articles tracker"
+        git push
+
     - name: Upload archive
       uses: actions/upload-artifact@v4
       with:

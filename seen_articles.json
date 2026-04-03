@@ -1,11 +1,4 @@
 {
-  "https://www.theverge.com/ai-artificial-intelligence/897528/meta-rogue-ai-agent-security-incident": "2026-03-19T23:34:47.970528",
-  "https://www.theverge.com/tech/897243/adobe-firefly-ai-custom-models-image-public-beta": "2026-03-19T23:34:47.970528",
-  "https://openai.com/index/how-we-monitor-internal-coding-agents-misalignment": "2026-03-19T23:34:47.970528",
-  "https://blog.google/products-and-platforms/products/search/personal-intelligence-expansion": "2026-03-19T23:34:47.970528",
-  "https://www.technologyreview.com/2026/03/17/1134351/the-pentagon-is-planning-for-ai-companies-to-train-on-classified-data-defense-official-says": "2026-03-19T23:34:47.970528",
-  "https://www.anthropic.com/news/claude-sonnet-4-6": "2026-03-19T23:34:47.970528",
-  "https://www.anthropic.com/research/team/alignment": "2026-03-19T23:34:47.970528",
   "https://www.theverge.com/tech/896490/google-replace-news-headlines-in-search-canary-coal-mine-experiment": "2026-03-20T15:42:32.354877",
   "https://www.theverge.com/tech/897915/amazon-transformer-alexa-phone": "2026-03-20T15:42:32.354877",
   "https://www.technologyreview.com/2026/03/20/1134438/openai-is-throwing-everything-into-building-a-fully-automated-researcher": "2026-03-20T15:42:32.354877",
@@ -128,5 +121,16 @@
   "https://techcrunch.com/2026/04/01/cognichip-wants-ai-to-design-the-chips-that-power-ai-and-just-raised-60m-to-try/?utm_source=tldrai": "2026-04-02T16:00:11.100314",
   "https://dropbox.tech/machine-learning/optimizing-dropbox-dash-relevance-judge-with-dspy?utm_source=tldrai": "2026-04-02T16:00:11.100314",
   "https://fujitsuresearch.github.io/OneCompression/?utm_source=tldrai": "2026-04-02T16:00:11.100314",
-  "https://huggingface.co/blog/OpenMed/training-mrna-models-25-species?utm_source=tldrai": "2026-04-02T16:00:11.100314"
+  "https://huggingface.co/blog/OpenMed/training-mrna-models-25-species?utm_source=tldrai": "2026-04-02T16:00:11.100314",
+  "https://www.theverge.com/ai-artificial-intelligence/906525/ai-chatbot-prescribe-refill-psychiatric-drugs": "2026-04-03T15:39:32.250362",
+  "https://openai.com/index/openai-acquires-tbpn": "2026-04-03T15:39:32.250362",
+  "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference": "2026-04-03T15:39:32.250362",
+  "https://deepmind.google/blog/gemma-4-byte-for-byte-the-most-capable-open-models": "2026-04-03T15:39:32.250362",
+  "https://www.anthropic.com/news/claude-sonnet-4-6": "2026-04-03T15:39:32.250362",
+  "https://www.anthropic.com/research/team/alignment": "2026-04-03T15:39:32.250362",
+  "https://cursor.com/blog/cursor-3?utm_source=tldrai": "2026-04-03T15:39:32.250362",
+  "https://qwen.ai/blog?id=qwen3.6&utm_source=tldrai": "2026-04-03T15:39:32.250362",
+  "https://blog.aifutures.org/p/q1-2026-timelines-update?utm_source=tldrai": "2026-04-03T15:39:32.250362",
+  "https://blog.langchain.com/open-models-have-crossed-a-threshold/?utm_source=tldrai": "2026-04-03T15:39:32.250362",
+  "https://weaviate.io/blog/engram-internal-use-case?utm_source=tldrai": "2026-04-03T15:39:32.250362"
 }

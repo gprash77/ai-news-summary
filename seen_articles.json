@@ -1,14 +1,4 @@
 {
-  "https://www.theverge.com/policy/900341/senator-schiff-anthropic-autonomous-weapons-mass-surveillance": "2026-03-25T16:10:02.123503",
-  "https://openai.com/index/teen-safety-policies-gpt-oss-safeguard": "2026-03-25T16:10:02.123503",
-  "https://www.technologyreview.com/2026/03/25/1134642/this-startup-wants-to-change-how-mathematicians-do-math": "2026-03-25T16:10:02.123503",
-  "https://claude.com/blog/auto-mode?utm_source=tldrai": "2026-03-25T16:10:02.123503",
-  "https://links.tldrnewsletter.com/UdUkoZ": "2026-03-25T16:10:02.123503",
-  "https://www.anthropic.com/engineering/harness-design-long-running-apps?utm_source=tldrai": "2026-03-25T16:10:02.123503",
-  "https://robonomics.substack.com/p/app-store-age-of-agent?utm_source=tldrai": "2026-03-25T16:10:02.123503",
-  "https://www.anyscale.com/blog/ray-data-llm-2x-throughput-vs-vllm?utm_source=tldrai": "2026-03-25T16:10:02.123503",
-  "https://ossature.dev/blog/introducing-ossature/?utm_source=tldrai": "2026-03-25T16:10:02.123503",
-  "https://qwen-pilot.notion.site/rlvr-direction?utm_source=tldrai": "2026-03-25T16:10:02.123503",
   "https://www.theverge.com/tech/901461/wikipedia-ai-generated-article-ban": "2026-03-26T16:12:12.425046",
   "https://www.theverge.com/policy/901404/senators-warren-hawley-eia-letter-data-centers": "2026-03-26T16:12:12.425046",
   "https://openai.com/index/our-approach-to-the-model-spec": "2026-03-26T16:12:12.425046",
@@ -122,5 +112,16 @@
   "https://sherwood.news/tech/report-some-of-metas-new-ai-models-will-eventually-be-open-source/?utm_source=tldrai": "2026-04-07T16:10:53.634966",
   "https://www.lesswrong.com/posts/dKpC6wHFqDrGZwnah/ais-can-now-often-do-massive-easy-to-verify-swe-tasks-and-i?utm_source=tldrai": "2026-04-07T16:10:53.634966",
   "https://share.jotbird.com/restless-steady-riverbend?utm_source=tldrai": "2026-04-07T16:10:53.634966",
-  "https://www.saastr.com/openais-122b-vc-round-is-vendor-deals-contingent-capital-and-a-guaranteed-return-it-arguably-cant-afford/?utm_source=tldrai": "2026-04-07T16:10:53.634966"
+  "https://www.saastr.com/openais-122b-vc-round-is-vendor-deals-contingent-capital-and-a-guaranteed-return-it-arguably-cant-afford/?utm_source=tldrai": "2026-04-07T16:10:53.634966",
+  "https://www.theverge.com/tech/908769/meta-muse-spark-ai-model-launch-rollout": "2026-04-08T16:15:57.240168",
+  "https://www.theverge.com/ai-artificial-intelligence/908513/the-vibes-are-off-at-openai": "2026-04-08T16:15:57.240168",
+  "https://openai.com/index/introducing-child-safety-blueprint": "2026-04-08T16:15:57.240168",
+  "https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future": "2026-04-08T16:15:57.240168",
+  "https://huggingface.co/blog/ibm-research/altk-evolve": "2026-04-08T16:15:57.240168",
+  "https://www.anthropic.com/glasswing?utm_source=tldrai": "2026-04-08T16:15:57.240168",
+  "https://z.ai/blog/glm-5.1?utm_source=tldrai": "2026-04-08T16:15:57.240168",
+  "https://www.greaterwrong.com/posts/WjaGAA4xCAXeFpyWm/my-picture-of-the-present-in-ai?utm_source=tldrai": "2026-04-08T16:15:57.240168",
+  "https://www.mercor.com/blog/Finance-tasks-ai-failures-modes/?utm_source=tldrai": "2026-04-08T16:15:57.240168",
+  "https://cursor.com/blog/warp-decode?utm_source=tldrai": "2026-04-08T16:15:57.240168",
+  "https://developers.googleblog.com/torchtpu-running-pytorch-natively-on-tpus-at-google-scale/?utm_source=tldrai": "2026-04-08T16:15:57.240168"
 }

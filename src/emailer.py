@@ -110,11 +110,7 @@ class EmailSender:
             message = MIMEMultipart('alternative')
             message['Subject'] = subject
             message['From'] = self.from_email
-            message['To'] = self.subscribers[0]  # Primary recipient
-
-            # BCC for additional subscribers (privacy)
-            if len(self.subscribers) > 1:
-                message['Bcc'] = ', '.join(self.subscribers[1:])
+            message['To'] = ', '.join(self.subscribers)
 
             # Attach both plain text and HTML versions
             message.attach(MIMEText(text_body, 'plain'))

@@ -23,6 +23,17 @@ def _make_sender(subscribers):
     )
 
 
+def _make_service(existing_messages=None):
+    mock_service = MagicMock()
+    users_api = mock_service.users.return_value
+    messages_api = users_api.messages.return_value
+    messages_api.list.return_value.execute.return_value = {
+        'messages': existing_messages or []
+    }
+    messages_api.send.return_value.execute.return_value = {}
+    return mock_service
+
+
 def _capture_raw_message(mock_service):
     """Return the decoded MIME message captured by the mock send() call."""
     call_kwargs = mock_service.users().messages().send.call_args
@@ -34,7 +45,7 @@ def _capture_raw_message(mock_service):
 class TestSendDigestSingleSubscriber:
     def test_sends_exactly_one_email(self):
         sender = _make_sender(["alice@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             result = sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -44,7 +55,7 @@ class TestSendDigestSingleSubscriber:
 
     def test_to_header_contains_subscriber(self):
         sender = _make_sender(["alice@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -54,7 +65,7 @@ class TestSendDigestSingleSubscriber:
 
     def test_no_bcc_header(self):
         sender = _make_sender(["alice@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -67,7 +78,7 @@ class TestSendDigestMultipleSubscribers:
     def test_sends_exactly_one_email(self):
         """Regression test: multiple subscribers must NOT cause multiple sends."""
         sender = _make_sender(["alice@example.com", "bob@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             result = sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -77,7 +88,7 @@ class TestSendDigestMultipleSubscribers:
 
     def test_to_header_contains_all_subscribers(self):
         sender = _make_sender(["alice@example.com", "bob@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -88,7 +99,7 @@ class TestSendDigestMultipleSubscribers:
 
     def test_no_bcc_header(self):
         sender = _make_sender(["alice@example.com", "bob@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -98,7 +109,7 @@ class TestSendDigestMultipleSubscribers:
 
     def test_three_subscribers_still_one_send(self):
         sender = _make_sender(["a@example.com", "b@example.com", "c@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -109,7 +120,7 @@ class TestSendDigestMultipleSubscribers:
 class TestSendDigestEdgeCases:
     def test_no_subscribers_returns_false(self):
         sender = _make_sender([])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             result = sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -127,7 +138,7 @@ class TestSendDigestEdgeCases:
 
     def test_subject_contains_date(self):
         sender = _make_sender(["alice@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -137,7 +148,7 @@ class TestSendDigestEdgeCases:
 
     def test_from_header(self):
         sender = _make_sender(["alice@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -147,7 +158,7 @@ class TestSendDigestEdgeCases:
 
     def test_message_has_html_and_text_parts(self):
         sender = _make_sender(["alice@example.com"])
-        mock_service = MagicMock()
+        mock_service = _make_service()
 
         with patch.object(sender, '_get_service', return_value=mock_service):
             sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
@@ -156,3 +167,13 @@ class TestSendDigestEdgeCases:
         content_types = [part.get_content_type() for part in msg.walk()]
         assert 'text/plain' in content_types
         assert 'text/html' in content_types
+
+    def test_skips_send_when_digest_already_exists_in_sent_mail(self):
+        sender = _make_sender(["alice@example.com"])
+        mock_service = _make_service(existing_messages=[{'id': '123'}])
+
+        with patch.object(sender, '_get_service', return_value=mock_service):
+            result = sender.send_digest(SAMPLE_ITEMS, SAMPLE_SUMMARY)
+
+        assert result is True
+        mock_service.users().messages().send.assert_not_called()

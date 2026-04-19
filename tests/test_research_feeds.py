@@ -1,11 +1,12 @@
 """Tests for diversified research sources and podcast improvements."""
+import os
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from main import collect_all, deduplicate_items, summarize_items
+from main import collect_all, deduplicate_items, summarize_items, is_delivery_run
 from summarizer import GeminiSummarizer
 
 
@@ -93,6 +94,26 @@ class TestResearchFeedCollection:
             items = collect_all(config)
             MockRSS.assert_not_called()
         assert items == []
+
+    @patch('main.AnthropicCollector')
+    @patch('main.GmailCollector')
+    def test_local_non_delivery_run_does_not_mark_newsletters_read(self, MockGmailCollector, MockAnthropicCollector):
+        MockAnthropicCollector.return_value.collect.return_value = []
+        MockGmailCollector.return_value.collect.return_value = []
+        config = {
+            'sources': {
+                'newsletters': {
+                    'gmail_label': 'AI-News',
+                    'mark_as_read': True,
+                },
+                'anthropic': {'enabled': False},
+            },
+            'filters': {'max_age_hours': 168},
+        }
+
+        collect_all(config, allow_state_updates=False)
+
+        assert MockGmailCollector.call_args.kwargs['mark_as_read'] is False
 
 
 class TestDeduplicationWithResearch:
@@ -205,3 +226,17 @@ class TestBalancedSelectionWithResearch:
         items = [_make_item("youtube")] * 3 + [_make_item("rss")] * 2
         selected = s._select_balanced_items(items)
         assert len(selected) >= 2
+
+
+class TestDeliveryMode:
+    @patch.dict(os.environ, {}, clear=True)
+    def test_non_github_run_is_not_delivery_run(self):
+        assert is_delivery_run() is False
+
+    @patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}, clear=True)
+    def test_github_actions_is_delivery_run(self):
+        assert is_delivery_run() is True
+
+    @patch.dict(os.environ, {'ALLOW_LOCAL_DELIVERY': 'true'}, clear=True)
+    def test_local_override_allows_delivery(self):
+        assert is_delivery_run() is True

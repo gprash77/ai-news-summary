@@ -44,7 +44,19 @@ def load_config(config_path: str = None) -> dict:
         return yaml.safe_load(f)
 
 
-def collect_all(config: dict) -> list[dict]:
+def is_delivery_run() -> bool:
+    """Return True only for the canonical delivery run.
+
+    GitHub Actions is the normal delivery environment. A local override exists
+    for intentional testing, but ad-hoc/local runs should be read-only so they
+    cannot steal data from the later scheduled delivery.
+    """
+    if os.environ.get('ALLOW_LOCAL_DELIVERY', '').lower() in {'1', 'true', 'yes'}:
+        return True
+    return os.environ.get('GITHUB_ACTIONS', '').lower() == 'true'
+
+
+def collect_all(config: dict, allow_state_updates: bool = True) -> list[dict]:
     """Collect items from all configured sources."""
     all_items = []
     max_age = config.get('filters', {}).get('max_age_hours', 48)
@@ -149,7 +161,7 @@ def collect_all(config: dict) -> list[dict]:
         logger.info("Collecting from Gmail newsletters...")
         gmail_collector = GmailCollector(
             label=newsletter_config['gmail_label'],
-            mark_as_read=newsletter_config.get('mark_as_read', True),
+            mark_as_read=newsletter_config.get('mark_as_read', True) and allow_state_updates,
             max_newsletters=newsletter_config.get('max_newsletters', 1),
             allowed_senders=newsletter_config.get('allowed_senders'),
             subject_must_contain=newsletter_config.get('subject_must_contain'),
@@ -299,9 +311,14 @@ def run(
 
     # Load config
     config = load_config(config_path)
+    delivery_enabled = is_delivery_run()
+    if delivery_enabled:
+        logger.info("Canonical delivery mode enabled")
+    else:
+        logger.info("Read-only local mode: skipping delivery side effects")
 
     # Collect from all sources
-    items = collect_all(config)
+    items = collect_all(config, allow_state_updates=delivery_enabled)
 
     if not items:
         logger.warning("No items collected from any source")
@@ -363,7 +380,7 @@ def run(
     # Generate podcast audio (optional)
     audio_url = None
     audio_config = config.get('audio', {})
-    if audio_config.get('enabled'):
+    if audio_config.get('enabled') and delivery_enabled:
         logger.info("Generating podcast script...")
         gemini_config = config.get('gemini', {})
         script_summarizer = GeminiSummarizer(
@@ -391,6 +408,8 @@ def run(
                 logger.info(f"Podcast audio available at: {audio_url}")
             else:
                 logger.warning("Audio generation failed or Drive upload skipped")
+    elif audio_config.get('enabled') and not delivery_enabled:
+        logger.info("Skipping podcast generation outside canonical delivery run")
 
     # Archive
     if not skip_archive:
@@ -403,7 +422,7 @@ def run(
         logger.info(f"Archived to: {archive_path}")
 
     # Send email
-    if not skip_email:
+    if not skip_email and delivery_enabled:
         email_config = config.get('email', {})
         twitter_config = config.get('sources', {}).get('twitter', {})
         from_email = os.environ.get(email_config.get('from_env', 'EMAIL_FROM'), email_config.get('from', ''))
@@ -423,10 +442,15 @@ def run(
                 logger.error("Failed to send email")
         else:
             logger.warning("No subscribers configured - skipping email")
+    elif not skip_email and not delivery_enabled:
+        logger.info("Skipping email outside canonical delivery run")
 
     # Mark all processed article URLs as seen for future runs
-    seen.mark_seen([item['url'] for item in items if item.get('url')])
-    seen.save()
+    if delivery_enabled:
+        seen.mark_seen([item['url'] for item in items if item.get('url')])
+        seen.save()
+    else:
+        logger.info("Skipping seen_articles update outside canonical delivery run")
 
     logger.info("Done!")
 

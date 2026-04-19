@@ -106,6 +106,10 @@ class EmailSender:
         text_body = self._format_email_text(items, daily_summary, include_twitter_fallback=not has_twitter, audio_url=audio_url)
 
         try:
+            if self._digest_already_sent(service, subject):
+                logger.warning(f"Digest already sent for subject '{subject}' - skipping duplicate send")
+                return True
+
             # Create message
             message = MIMEMultipart('alternative')
             message['Subject'] = subject
@@ -129,6 +133,24 @@ class EmailSender:
         except Exception as e:
             logger.error(f"Error sending email: {e}")
             return False
+
+    def _digest_already_sent(self, service, subject: str) -> bool:
+        """Check Sent mail for a digest with the same dated subject.
+
+        This prevents a second delivery when the job is triggered twice from
+        different schedulers or a delayed rerun later in the morning.
+        """
+        try:
+            response = service.users().messages().list(
+                userId='me',
+                q=f'in:sent subject:"{subject}"',
+                maxResults=1,
+            ).execute()
+        except Exception as e:
+            logger.warning(f"Could not check for existing digest in Sent mail: {e}")
+            return False
+
+        return bool(response.get('messages'))
 
     def _format_email_text(self, items: list[dict], daily_summary: str, include_twitter_fallback: bool = False, audio_url: Optional[str] = None) -> str:
         """Format email as plain text."""

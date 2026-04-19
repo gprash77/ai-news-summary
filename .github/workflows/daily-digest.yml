@@ -2,10 +2,14 @@ name: Daily AI News Digest
 
 on:
   schedule:
-    # Run at 7 AM PST (15:00 UTC)
-    # PST = UTC-8, so 7 AM PST = 15:00 UTC
+    # Fixed UTC schedule.
+    # 15:00 UTC is 7:00 AM PST in winter and 8:00 AM PDT in daylight saving time.
     - cron: '0 15 * * *'
   workflow_dispatch:  # Allow manual trigger
+
+concurrency:
+  group: daily-ai-news-digest
+  cancel-in-progress: false
 
 jobs:
   send-digest:

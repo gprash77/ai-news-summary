@@ -1,9 +1,4 @@
 {
-  "https://www.theverge.com/ai-artificial-intelligence/911579/google-synthid-ai-watermarking-system-reverse-engineered": "2026-04-14T16:10:26.581513",
-  "https://www.theverge.com/ai-artificial-intelligence/911423/openai-sam-altman-attack": "2026-04-14T16:10:26.581513",
-  "https://blog.google/company-news/outreach-and-initiatives/creating-opportunity/ai-economy-forum": "2026-04-14T16:10:26.581513",
-  "https://deepmind.google/blog/gemini-robotics-er-1-6": "2026-04-14T16:10:26.581513",
-  "https://www.technologyreview.com/2026/04/14/1135298/coming-soon-10-things-that-matter-in-ai-right-now": "2026-04-14T16:10:26.581513",
   "https://www.theverge.com/tech/912287/adobe-firefly-ai-assistant-announcement-editing": "2026-04-15T16:04:14.515256",
   "https://www.theverge.com/ai-artificial-intelligence/912297/apple-app-store-ban-grok-x-deepfakes": "2026-04-15T16:04:14.515256",
   "https://openai.com/index/scaling-trusted-access-for-cyber-defense": "2026-04-15T16:04:14.515256",
@@ -72,5 +67,16 @@
   "https://williamoconnell.me/blog/post/ai-ide/?utm_source=tldrai": "2026-04-27T16:27:18.445052",
   "https://www.greaterwrong.com/posts/fewDbvpKMZLgGuWT2/the-world-can-t-keep-up-with-ai-labs?utm_source=tldrai": "2026-04-27T16:27:18.445052",
   "https://venturebeat.com/infrastructure/monitoring-llm-behavior-drift-retries-and-refusal-patterns?utm_source=tldrai": "2026-04-27T16:27:18.445052",
-  "https://github.com/alash3al/stash?utm_source=tldrai": "2026-04-27T16:27:18.445052"
+  "https://github.com/alash3al/stash?utm_source=tldrai": "2026-04-27T16:27:18.445052",
+  "https://www.technologyreview.com/2026/04/27/1136466/elon-musk-and-sam-altman-are-going-to-court-over-openais-future": "2026-04-28T16:53:29.420701",
+  "https://openai.com/index/openai-available-at-fedramp-moderate": "2026-04-28T16:53:29.420701",
+  "https://blog.google/products-and-platforms/products/translate/fun-facts-google-translate-20-years": "2026-04-28T16:53:29.420701",
+  "https://huggingface.co/blog/nvidia/nemotron-3-nano-omni-multimodal-intelligence": "2026-04-28T16:53:29.420701",
+  "https://links.tldrnewsletter.com/4qvzVa": "2026-04-28T16:53:29.420701",
+  "https://techcrunch.com/2026/04/27/china-vetoes-metas-2b-manus-deal-after-months-long-probe/?utm_source=tldrai": "2026-04-28T16:53:29.420701",
+  "https://links.tldrnewsletter.com/SizjbP": "2026-04-28T16:53:29.420701",
+  "https://links.tldrnewsletter.com/W2KapZ": "2026-04-28T16:53:29.420701",
+  "https://eran.sandler.co.il/post/2026-04-27-batch-api-is-terrible-for-one-agent/?utm_source=tldrai": "2026-04-28T16:53:29.420701",
+  "https://thezvi.wordpress.com/2026/04/27/gpt-5-5-the-system-card/?utm_source=tldrai": "2026-04-28T16:53:29.420701",
+  "https://arkaung.github.io/interactive-turboquant/?utm_source=tldrai": "2026-04-28T16:53:29.420701"
 }

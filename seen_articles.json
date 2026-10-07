@@ -1,16 +1,4 @@
 {
-  "https://www.theverge.com/policy/999412/data-center-water-electricity-disclosure-bills": "2026-09-23T18:50:48.807996",
-  "https://www.theverge.com/ai-artificial-intelligence/999470/anthropic-biolab-claude-crispr": "2026-09-23T18:50:48.807996",
-  "https://openai.com/index/ringg": "2026-09-23T18:50:48.807996",
-  "https://deepmind.google/blog/advancing-private-ai-compute-with-secure-server-side-memory": "2026-09-23T18:50:48.807996",
-  "https://www.anthropic.com/news/claude-discovers-novel-enzyme-system": "2026-09-23T18:50:48.807996",
-  "https://www.anthropic.com/research/team/alignment": "2026-09-23T18:50:48.807996",
-  "https://links.tldrnewsletter.com/RM8wFX": "2026-09-23T18:50:48.807996",
-  "https://www.anthropic.com/claude-opus-5-5?utm_source=tldrai": "2026-09-23T18:50:48.807996",
-  "https://labs.scale.com/leaderboard/swe_bench_pro_public_v2?utm_source=tldrai": "2026-09-23T18:50:48.807996",
-  "https://www.perplexity.ai/hub/blog/learning-from-real-world-experience?utm_source=tldrai": "2026-09-23T18:50:48.807996",
-  "https://links.tldrnewsletter.com/ZXLK5a": "2026-09-23T18:50:48.807996",
-  "https://pytorch.org/blog/hardware-agnostic-models-in-vllm/?utm_source=tldrai": "2026-09-23T18:50:48.807996",
   "https://www.theverge.com/ai-artificial-intelligence/1000116/google-gemini-business-phone-calls": "2026-09-24T18:51:39.517018",
   "https://www.theverge.com/ai-artificial-intelligence/999881/why-cant-we-airgap-rogue-ai-agents": "2026-09-24T18:51:39.517018",
   "https://openai.com/index/two-years-of-openai-academy": "2026-09-24T18:51:39.517018",
@@ -134,5 +122,14 @@
   "https://www.akashbajwa.co/p/openais-b2b-marketplace-the-hyperscaler?utm_source=tldrai": "2026-10-06T20:01:28.189648",
   "https://www.theaithinker.com/p/how-to-build-an-ai-native-software?utm_source=tldrai": "2026-10-06T20:01:28.189648",
   "https://reflection.ai/blog/introducing-beam?utm_source=tldrai": "2026-10-06T20:01:28.189648",
-  "https://links.tldrnewsletter.com/DilGg3": "2026-10-06T20:01:28.189648"
+  "https://links.tldrnewsletter.com/DilGg3": "2026-10-06T20:01:28.189648",
+  "https://www.theverge.com/ai-artificial-intelligence/1007276/openai-chatgpt-intelligent-ui-gpt-6": "2026-10-07T20:25:56.993406",
+  "https://www.theverge.com/tech/1007147/microsoft-surface-laptop-ultra-windows-event-everything-announced": "2026-10-07T20:25:56.993406",
+  "https://openai.com/index/teens-learn-and-plan": "2026-10-07T20:25:56.993406",
+  "https://www.anthropic.com/research/team/alignment": "2026-10-07T20:25:56.993406",
+  "https://mistral.ai/news/mistral-large-4/?utm_source=tldrai": "2026-10-07T20:25:56.993406",
+  "https://deepmind.google/models/model-cards/nano-banana-2-1/?utm_source=tldrai": "2026-10-07T20:25:56.993406",
+  "https://links.tldrnewsletter.com/IGdcy2": "2026-10-07T20:25:56.993406",
+  "https://sierra.ai/blog/introducing-personal-agent-protocol?utm_source=tldrai": "2026-10-07T20:25:56.993406",
+  "https://community.openai.com/t/decisions-api-is-now-available-in-public-beta/1403877?utm_source=tldrai": "2026-10-07T20:25:56.993406"
 }

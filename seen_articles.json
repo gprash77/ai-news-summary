@@ -1,14 +1,4 @@
 {
-  "https://www.theverge.com/news/1012293/meta-apple-muse-spark-open-ai-model-mlx": "2026-10-15T18:54:06.372862",
-  "https://www.theverge.com/tech/1011938/muse-ai-data-friends-consent": "2026-10-15T18:54:06.372862",
-  "https://openai.com/index/teaching-students-to-think-and-learn-through-questions": "2026-10-15T18:54:06.372862",
-  "https://www.anthropic.com/news/an-update-on-independent-evaluators": "2026-10-15T18:54:06.372862",
-  "https://links.tldrnewsletter.com/sfLO2d": "2026-10-15T18:54:06.372862",
-  "https://links.tldrnewsletter.com/rEFrxw": "2026-10-15T18:54:06.372862",
-  "https://links.tldrnewsletter.com/caghQc": "2026-10-15T18:54:06.372862",
-  "https://research.google/blog/analyzing-technical-documents-with-deep-review/?utm_source=tldrai": "2026-10-15T18:54:06.372862",
-  "https://github.com/google-research/harness2?utm_source=tldrai": "2026-10-15T18:54:06.372862",
-  "https://www.vals.ai/blogs/routers-new-ai-primitive?utm_source=tldrai": "2026-10-15T18:54:06.372862",
   "https://www.theverge.com/tech/1012748/nvidia-rtx-spark-windows-arm-laptops-asus-hp-lenovo-impressions": "2026-10-16T18:38:07.599318",
   "https://www.theverge.com/tech/1012846/meta-business-terms-scrape-news-publishers": "2026-10-16T18:38:07.599318",
   "https://openai.com/index/introducing-the-rosalind-academic-plan": "2026-10-16T18:38:07.599318",
@@ -127,5 +117,13 @@
   "https://thezvi.wordpress.com/2026/10/27/anthropic-versus-anthropic/?utm_source=tldrai": "2026-10-28T20:05:23.744777",
   "https://research.google/blog/the-sleep-framework-a-new-way-for-llms-to-retain-knowledge-in-continual-learning/?utm_source=tldrai": "2026-10-28T20:05:23.744777",
   "https://cognition.com/blog/frontier-code-2.0?utm_source=tldrai": "2026-10-28T20:05:23.744777",
-  "https://github.com/anthropics/formal-math/tree/main/eth?utm_source=tldrai": "2026-10-28T20:05:23.744777"
+  "https://github.com/anthropics/formal-math/tree/main/eth?utm_source=tldrai": "2026-10-28T20:05:23.744777",
+  "https://www.theverge.com/ai-artificial-intelligence/1022519/google-gemini-file-editing-documents-pdfs": "2026-10-29T20:03:20.269865",
+  "https://www.theverge.com/tech/1022023/microsoft-exit-offer-layoffs-notepad": "2026-10-29T20:03:20.269865",
+  "https://openai.com/index/updated-model-spec": "2026-10-29T20:03:20.269865",
+  "https://www.technologyreview.com/2026/10/29/1147824/monitor-ai-agents-actions-real-time": "2026-10-29T20:03:20.269865",
+  "https://www.interconnects.ai/p/artificial-analysis-v5-and-the-benchmarkers?utm_source=tldrai": "2026-10-29T20:03:20.269865",
+  "https://divagr.com/blog/qwenputer?utm_source=tldrai": "2026-10-29T20:03:20.269865",
+  "https://links.tldrnewsletter.com/3vHagX": "2026-10-29T20:03:20.269865",
+  "https://vercel.com/blog/introducing-vercel-ci?utm_source=tldrai": "2026-10-29T20:03:20.269865"
 }

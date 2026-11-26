@@ -1,15 +1,4 @@
 {
-  "https://www.theverge.com/ai-artificial-intelligence/1032125/ai-agents-maya-site-archeology-discovery": "2026-11-12T21:45:27.810037",
-  "https://openai.com/index/amplitude": "2026-11-12T21:45:27.810037",
-  "https://blog.google/products-and-platforms/products/search/gemini-4-hydrogen-search-upgrade": "2026-11-12T21:45:27.810037",
-  "https://www.technologyreview.com/2026/11/12/1148483/nvidia-chip-tracking": "2026-11-12T21:45:27.810037",
-  "https://huggingface.co/blog/ibm-granite/llmon-an-llm-native-markup-language-now-in-granite": "2026-11-12T21:45:27.810037",
-  "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-decisions-api/?utm_source=tldrai": "2026-11-12T21:45:27.810037",
-  "https://runway.com/news/company-news/praxis-1-is-now-available?utm_source=tldrai": "2026-11-12T21:45:27.810037",
-  "https://openrouter.ai/blog/insights/mcp-vs-cli-vs-skills/?utm_source=tldrai": "2026-11-12T21:45:27.810037",
-  "https://www.perplexity.ai/hub/blog/escaping-space-part-ii?utm_source=tldrai": "2026-11-12T21:45:27.810037",
-  "https://www.lesswrong.com/posts/EHkwCDAmhWPAWEziM/llms-can-learn-some-multi-step-reasoning-on-filler-tokens-2?utm_source=tldrai": "2026-11-12T21:45:27.810037",
-  "https://deepmind.google/blog/alphagenome-2-deciphering-how-cells-read-dna-to-better-understand-disease/?utm_source=tldrai": "2026-11-12T21:45:27.810037",
   "https://openai.com/index/introducing-chatgpt-wallet": "2026-11-13T21:12:07.190809",
   "https://www.theverge.com/podcast/1032866/jensen-huang-nvidia-china-trump-vergecast": "2026-11-13T21:12:07.190809",
   "https://claude.com/resources/articles/self-hosted-claude-managed-agents?utm_source=tldrai": "2026-11-13T21:12:07.190809",
@@ -123,5 +112,15 @@
   "https://claude.com/resources/articles/install-as-app?utm_source=tldrai": "2026-11-25T23:29:40.464900",
   "https://www.friedgil.com/vpvnp?utm_source=tldrai": "2026-11-25T23:29:40.464900",
   "https://www.paradigm3.org/research/swarms?utm_source=tldrai": "2026-11-25T23:29:40.464900",
-  "https://vllm.ai/blog/2026-11-24-vllm-gr-announcement?utm_source=tldrai": "2026-11-25T23:29:40.464900"
+  "https://vllm.ai/blog/2026-11-24-vllm-gr-announcement?utm_source=tldrai": "2026-11-25T23:29:40.464900",
+  "https://www.theverge.com/policy/1042620/character-ai-sale-state-ags-block-selling-users-chats": "2026-11-26T23:30:52.919223",
+  "https://huggingface.co/blog/ggml-org/llamacpp-amd-bench": "2026-11-26T23:30:52.919223",
+  "https://www.testingcatalog.com/testers-share-early-results-possible-claude-opus-5-6/#google_vignette?utm_source=tldrai": "2026-11-26T23:30:52.919223",
+  "https://links.tldrnewsletter.com/wZwoWY": "2026-11-26T23:30:52.919223",
+  "https://rybindmitry.github.io/blogs/gpt-6-2-astra-is-superhuman-in-mathematical-optimization.html?utm_source=tldrai": "2026-11-26T23:30:52.919223",
+  "https://newsletter.forethought.org/p/paths-extreme-power-concentration?utm_source=tldrai": "2026-11-26T23:30:52.919223",
+  "https://modaic.dev/blog/latency-doesnt-lie?utm_source=tldrai": "2026-11-26T23:30:52.919223",
+  "https://links.tldrnewsletter.com/wsrzkW": "2026-11-26T23:30:52.919223",
+  "https://safeguards.anthropic.com/2026/siren/?utm_source=tldrai": "2026-11-26T23:30:52.919223",
+  "https://sand.ai/blog/magi-2/?utm_source=tldrai": "2026-11-26T23:30:52.919223"
 }
